@@ -137,6 +137,11 @@ impl WorktreeManager {
         self.items.len()
     }
 
+    /// Check if there are no worktrees
+    pub fn is_empty(&self) -> bool {
+        self.items.is_empty()
+    }
+
     /// Iterate over all worktrees
     pub fn iter(&self) -> std::slice::Iter<'_, Worktree> {
         self.items.iter()
