@@ -1,0 +1,39 @@
+[package]
+name = "clash-sh"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.93.0"
+authors = ["Clash Contributors"]
+license = "MIT"
+description = "Manage merge conflicts across git worktrees for parallel AI coding agents"
+readme = "README.md"
+repository = "https://github.com/clash-sh/clash"
+homepage = "https://clash.sh"
+keywords = ["git", "worktree", "merge", "conflict", "cli"]
+categories = ["command-line-utilities", "development-tools"]
+exclude = [
+    ".claude/",
+    "docs/",
+    "test-file.txt",
+    "another-file.txt",
+]
+
+[[bin]]
+name = "clash"
+path = "src/main.rs"
+
+[dependencies]
+clap = { version = "4.5", features = ["derive"] }
+gix = { version = "0.78", features = ["merge"] }
+ratatui = "0.30"
+crossterm = "0.29"
+notify = "8.1"
+chrono = "0.4"
+ignore = "0.4"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+colored = "2.1"
+thiserror = "2.0"
+
+[dev-dependencies]
+tempfile = "3.8"

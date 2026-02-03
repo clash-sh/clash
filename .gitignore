@@ -1,0 +1,31 @@
+# Rust
+/target
+**/*.rs.bk
+*.pdb
+# Note: Cargo.lock is committed for binary crates (ensures reproducible builds)
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Project specific
+/tmp
+/temp
+*.log
+.env
+
+# Claude settings (local configs)
+.claude/settings.local.json
+*.local.json
+
+# Demo artifacts
+demos/.DS_Store
+*.DS_Store
+
