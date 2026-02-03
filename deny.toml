@@ -3,14 +3,13 @@
 
 [advisories]
 # Check for security vulnerabilities in dependencies
+version = 2
 db-path = "~/.cargo/advisory-db"
 db-urls = ["https://github.com/rustsec/advisory-db"]
-vulnerability = "deny"
-ignore = []
 
 [licenses]
 # Allowed licenses for dependencies
-unlicensed = "deny"
+version = 2
 allow = [
     "MIT",
     "Apache-2.0",
@@ -21,10 +20,6 @@ allow = [
     "Unicode-DFS-2016",
     "Zlib",
 ]
-deny = []
-copyleft = "warn"
-allow-osi-fsf-free = "both"
-default = "deny"
 confidence-threshold = 0.8
 
 [bans]
@@ -32,12 +27,9 @@ confidence-threshold = 0.8
 multiple-versions = "warn"
 wildcards = "allow"
 highlight = "all"
-skip = []
-skip-tree = []
 
 [sources]
 # Require all dependencies from crates.io
 unknown-registry = "warn"
 unknown-git = "warn"
 allow-registry = ["https://github.com/rust-lang/crates.io-index"]
-allow-git = []
