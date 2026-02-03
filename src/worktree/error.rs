@@ -39,7 +39,9 @@ pub enum WorktreeError {
     InvalidPath { path: PathBuf },
 
     /// Bare repository not supported
-    #[error("Bare repositories are not supported. Clash requires a working directory to check for conflicts.")]
+    #[error(
+        "Bare repositories are not supported. Clash requires a working directory to check for conflicts."
+    )]
     BareRepository,
 
     /// Object is not a commit

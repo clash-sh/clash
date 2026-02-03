@@ -1,7 +1,9 @@
 //! WorktreeManager - manages collection of worktrees in a git repository
 
 use super::error::{Result, WorktreeError};
-use super::{DETACHED_HEAD_LABEL, INACCESSIBLE_PATH_LABEL, MAIN_WORKTREE_ID, Worktree, WorktreeStatus};
+use super::{
+    DETACHED_HEAD_LABEL, INACCESSIBLE_PATH_LABEL, MAIN_WORKTREE_ID, Worktree, WorktreeStatus,
+};
 use std::path::PathBuf;
 
 /// Manager for all worktrees in a git repository
