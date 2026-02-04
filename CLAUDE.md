@@ -284,6 +284,16 @@ if args.json {
 
 ## Using Clash During Development
 
+**IMPORTANT: When working in parallel with other AI agents or developers in separate worktrees, always check for conflicts before and after making changes.**
+
+After each commit, run `clash status --json` to check for merge conflicts with other worktrees. If conflicts are detected, examine the conflicting files in those worktrees and adapt your approach to avoid or minimize conflicts. This prevents wasted work from incompatible changes.
+
+Example workflow:
+1. Make changes and commit
+2. Run: `clash status --json`
+3. If conflicts found: Review the conflicting worktree's changes
+4. Adapt your implementation to work with their changes
+
 When working on Clash itself or using multiple worktrees, use Clash to check for conflicts:
 
 ### Check for Conflicts (Human-Readable)
