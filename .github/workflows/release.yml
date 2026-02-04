@@ -204,14 +204,51 @@ jobs:
           VERSION=${{ needs.create-release.outputs.version }}
           VERSION_NUM=${VERSION#v}  # Remove 'v' prefix
 
-          # Update version
-          sed -i "s/version \".*\"/version \"$VERSION_NUM\"/" Formula/clash.rb
+          # Create updated formula
+          cat > Formula/clash.rb << 'FORMULA_EOF'
+          class Clash < Formula
+            desc "Manage merge conflicts across git worktrees for parallel AI coding agents"
+            homepage "https://clash.sh"
+            version "$VERSION_NUM"
+            license "MIT"
 
-          # Update SHA256 hashes
-          sed -i "s/sha256 \"PLACEHOLDER_SHA_ARM64\"/sha256 \"$SHA_ARM64\"/" Formula/clash.rb
-          sed -i "s/sha256 \"PLACEHOLDER_SHA_X64\"/sha256 \"$SHA_X64\"/" Formula/clash.rb
-          sed -i "s/sha256 \"PLACEHOLDER_SHA_LINUX_ARM64\"/sha256 \"$SHA_LINUX_ARM64\"/" Formula/clash.rb
-          sed -i "s/sha256 \"PLACEHOLDER_SHA_LINUX_X64\"/sha256 \"$SHA_LINUX_X64\"/" Formula/clash.rb
+            on_macos do
+              if Hardware::CPU.arm?
+                url "https://github.com/clash-sh/clash/releases/download/$VERSION/clash-aarch64-apple-darwin.tar.gz"
+                sha256 "$SHA_ARM64"
+              else
+                url "https://github.com/clash-sh/clash/releases/download/$VERSION/clash-x86_64-apple-darwin.tar.gz"
+                sha256 "$SHA_X64"
+              end
+            end
+
+            on_linux do
+              if Hardware::CPU.arm?
+                url "https://github.com/clash-sh/clash/releases/download/$VERSION/clash-aarch64-unknown-linux-gnu.tar.gz"
+                sha256 "$SHA_LINUX_ARM64"
+              else
+                url "https://github.com/clash-sh/clash/releases/download/$VERSION/clash-x86_64-unknown-linux-gnu.tar.gz"
+                sha256 "$SHA_LINUX_X64"
+              end
+            end
+
+            def install
+              bin.install "clash"
+            end
+
+            test do
+              assert_match "clash", shell_output("#{bin}/clash --version")
+            end
+          end
+          FORMULA_EOF
+
+          # Replace variables
+          sed -i "s/\$VERSION_NUM/$VERSION_NUM/g" Formula/clash.rb
+          sed -i "s/\$VERSION/$VERSION/g" Formula/clash.rb
+          sed -i "s/\$SHA_ARM64/$SHA_ARM64/g" Formula/clash.rb
+          sed -i "s/\$SHA_X64/$SHA_X64/g" Formula/clash.rb
+          sed -i "s/\$SHA_LINUX_ARM64/$SHA_LINUX_ARM64/g" Formula/clash.rb
+          sed -i "s/\$SHA_LINUX_X64/$SHA_LINUX_X64/g" Formula/clash.rb
 
       - name: Commit and push changes
         run: |
