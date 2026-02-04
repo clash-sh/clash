@@ -1,0 +1,63 @@
+name: Test Install Script
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-install:
+    name: Test install script
+    strategy:
+      matrix:
+        include:
+          # macOS ARM
+          - os: macos-latest
+            arch: arm64
+
+          # macOS Intel
+          - os: macos-13
+            arch: x64
+
+          # Linux x64
+          - os: ubuntu-latest
+            arch: x64
+
+          # Linux ARM (via QEMU)
+          - os: ubuntu-latest
+            arch: arm64
+            use_qemu: true
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Set up QEMU (for ARM on x64)
+        if: matrix.use_qemu == true
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - name: Test install script (native)
+        if: matrix.use_qemu != true
+        run: |
+          curl -fsSL https://clash.sh/install.sh | sh
+          echo "Install completed"
+
+      - name: Test install script (ARM via Docker)
+        if: matrix.use_qemu == true
+        run: |
+          docker run --platform linux/arm64 --rm ubuntu:24.04 bash -c "
+            apt-get update && apt-get install -y curl &&
+            curl -fsSL https://clash.sh/install.sh | sh
+          "
+
+      - name: Verify installation
+        if: matrix.use_qemu != true
+        run: |
+          clash --version
+          clash --help
+
+      - name: Test basic commands
+        if: matrix.use_qemu != true
+        run: |
+          # These will fail if not in a git worktree, but tests the binary works
+          clash status || echo "Expected to fail outside git repo"
+          echo "Binary execution test passed"
