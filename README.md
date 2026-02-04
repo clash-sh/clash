@@ -1,6 +1,12 @@
-# ⚔️ Clash
+<p align="center">
+  <img src="demos/logo.png" alt="Clash Logo" width="120"/>
+</p>
 
-**_Manage merge conflicts across git worktrees for parallel AI coding agents_**
+<h1 align="center">Clash</h1>
+
+<p align="center">
+  <strong><em>Manage merge conflicts across git worktrees for parallel AI coding agents</em></strong>
+</p>
 
 Clash is an open-source CLI tool that helps manage/avoid merge conflicts across git worktrees.
 
