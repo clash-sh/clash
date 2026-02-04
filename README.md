@@ -158,6 +158,12 @@ Example workflow:
 2. Run: clash status --json
 3. If conflicts found: Review the conflicting worktree's changes
 4. Adapt your implementation to work with their changes
+
+Available commands:
+- clash --help (show all commands)
+- clash status (check for conflicts)
+- clash status --json (output as JSON)
+- clash watch (real-time monitoring)
 ```
 
 ### MCP Server (Coming Soon)

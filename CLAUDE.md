@@ -294,6 +294,12 @@ Example workflow:
 3. If conflicts found: Review the conflicting worktree's changes
 4. Adapt your implementation to work with their changes
 
+**Available Commands:**
+- `clash --help` - Show all available commands and options
+- `clash status` - Check for conflicts across all worktrees
+- `clash status --json` - Output conflicts as JSON for automation
+- `clash watch` - Monitor conflicts in real-time with interactive TUI
+
 When working on Clash itself or using multiple worktrees, use Clash to check for conflicts:
 
 ### Check for Conflicts (Human-Readable)
