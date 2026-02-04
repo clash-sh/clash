@@ -14,7 +14,6 @@ It's designed for developers running multiple AI coding agents (Claude Code, Cod
 
 
 [![Crates.io](https://img.shields.io/crates/v/clash-sh.svg)](https://crates.io/crates/clash-sh)
-[![Downloads](https://img.shields.io/crates/d/clash-sh.svg)](https://crates.io/crates/clash-sh)
 [![CI](https://github.com/clash-sh/clash/workflows/CI/badge.svg)](https://github.com/clash-sh/clash/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Rust: 1.93+](https://img.shields.io/badge/Rust-1.93+-orange.svg)](https://rust-lang.org)
