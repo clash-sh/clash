@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  test-install:
+  test-install-script:
     name: Test install script
     strategy:
       matrix:
@@ -61,3 +61,33 @@ jobs:
           # These will fail if not in a git worktree, but tests the binary works
           clash status || echo "Expected to fail outside git repo"
           echo "Binary execution test passed"
+
+  test-homebrew:
+    name: Test Homebrew installation
+    strategy:
+      matrix:
+        os: [macos-latest, macos-13, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Install Homebrew (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+          echo 'eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"' >> $GITHUB_ENV
+          eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+
+      - name: Install clash via Homebrew
+        run: |
+          brew tap clash-sh/tap
+          brew install clash
+
+      - name: Verify Homebrew installation
+        run: |
+          clash --version
+          clash --help
+
+      - name: Test basic commands
+        run: |
+          clash status || echo "Expected to fail outside git repo"
+          echo "Homebrew installation test passed"
