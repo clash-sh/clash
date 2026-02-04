@@ -12,11 +12,12 @@ Clash is an open-source CLI tool that helps manage/avoid merge conflicts across 
 
 It's designed for developers running multiple AI coding agents (Claude Code, Codex, etc.) in parallel, enabling them to identify potential conflicts early on in the development process and lets them/their coding agent work around potential conflicts.
 
-
-[![Crates.io](https://img.shields.io/crates/v/clash-sh.svg)](https://crates.io/crates/clash-sh)
-[![CI](https://github.com/clash-sh/clash/workflows/CI/badge.svg)](https://github.com/clash-sh/clash/actions)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Rust: 1.93+](https://img.shields.io/badge/Rust-1.93+-orange.svg)](https://rust-lang.org)
+<p align="center">
+  <a href="https://crates.io/crates/clash-sh"><img src="https://img.shields.io/crates/v/clash-sh.svg" alt="Crates.io"></a>
+  <a href="https://github.com/clash-sh/clash/actions"><img src="https://github.com/clash-sh/clash/workflows/CI/badge.svg" alt="CI"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
+  <a href="https://rust-lang.org"><img src="https://img.shields.io/badge/Rust-1.93+-orange.svg" alt="Rust: 1.93+"></a>
+</p>
 
 ## Problem Statement with Some Context
 
