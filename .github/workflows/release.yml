@@ -134,10 +134,7 @@ jobs:
       - name: Upload Release Asset
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release upload ${{ needs.create-release.outputs.version }} \
-            ${{ env.ASSET_PATH }} \
-            --repo ${{ github.repository }}
+        run: gh release upload ${{ needs.create-release.outputs.version }} ${{ env.ASSET_PATH }} --repo ${{ github.repository }}
 
   publish-crate:
     name: Publish to crates.io
