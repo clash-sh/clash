@@ -12,52 +12,52 @@ jobs:
   create-release:
     name: Create Release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     outputs:
-      upload_url: ${{ steps.create_release.outputs.upload_url }}
-      version: ${{ env.VERSION }}
+      version: ${{ steps.get_version.outputs.version }}
     steps:
       - name: Get version from tag
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+        id: get_version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Clash ${{ env.VERSION }}
-          body: |
-            # Clash ${{ env.VERSION }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create ${{ env.VERSION }} \
+            --repo ${{ github.repository }} \
+            --title "Clash ${{ env.VERSION }}" \
+            --notes "# Clash ${{ env.VERSION }}
 
-            ## Installation
+          ## Installation
 
-            ### macOS/Linux
-            ```bash
-            curl -fsSL https://clash.sh/install.sh | sh
-            ```
+          ### macOS/Linux
+          \`\`\`bash
+          curl -fsSL https://clash.sh/install.sh | sh
+          \`\`\`
 
-            ### Homebrew
-            ```bash
-            brew install clash-sh/tap/clash
-            ```
+          ### Homebrew
+          \`\`\`bash
+          brew install clash-sh/tap/clash
+          \`\`\`
 
-            ### From source
-            ```bash
-            cargo install --git https://github.com/clash-sh/clash
-            ```
+          ### From source
+          \`\`\`bash
+          cargo install clash-sh
+          \`\`\`
 
-            ## What's Changed
-            See [CHANGELOG.md](https://github.com/clash-sh/clash/blob/main/CHANGELOG.md)
-
-            ## Binary Downloads
-            See Assets below for pre-compiled binaries.
-          draft: false
-          prerelease: false
+          ## Binary Downloads
+          See Assets below for pre-compiled binaries."
 
   build-and-upload:
     name: Build and Upload
     needs: create-release
+    permissions:
+      contents: write
     strategy:
       matrix:
         include:
@@ -132,14 +132,12 @@ jobs:
           echo "ASSET_PATH=${{ matrix.asset_name }}" >> $GITHUB_ENV
 
       - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ needs.create-release.outputs.upload_url }}
-          asset_path: ${{ env.ASSET_PATH }}
-          asset_name: ${{ matrix.asset_name }}
-          asset_content_type: application/octet-stream
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload ${{ needs.create-release.outputs.version }} \
+            ${{ env.ASSET_PATH }} \
+            --repo ${{ github.repository }}
 
   publish-crate:
     name: Publish to crates.io
