@@ -13,9 +13,11 @@ Clash is an open-source CLI tool that helps manage/avoid merge conflicts across 
 It's designed for developers running multiple AI coding agents (Claude Code, Codex, etc.) in parallel, enabling them to identify potential conflicts early on in the development process and lets them/their coding agent work around potential conflicts.
 
 
+[![Crates.io](https://img.shields.io/crates/v/clash-sh.svg)](https://crates.io/crates/clash-sh)
+[![Downloads](https://img.shields.io/crates/d/clash-sh.svg)](https://crates.io/crates/clash-sh)
+[![CI](https://github.com/clash-sh/clash/workflows/CI/badge.svg)](https://github.com/clash-sh/clash/actions)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Rust: 1.93+](https://img.shields.io/badge/Rust-1.93+-orange.svg)](https://rust-lang.org)
-[![Status: v0.1.0](https://img.shields.io/badge/Status-v0.1.0-yellow.svg)](https://github.com/clash-sh/clash/releases)
 
 ## Problem Statement with Some Context
 
