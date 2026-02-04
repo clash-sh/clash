@@ -39,7 +39,7 @@ jobs:
 
             ### Homebrew
             ```bash
-            brew install clash-sh/clash/clash
+            brew install clash-sh/tap/clash
             ```
 
             ### From source
@@ -174,9 +174,9 @@ jobs:
       - name: Checkout tap repository
         uses: actions/checkout@v4
         with:
-          repository: clash-sh/homebrew-clash
+          repository: clash-sh/homebrew-tap
           token: ${{ secrets.TAP_GITHUB_TOKEN }}
-          path: homebrew-clash
+          path: homebrew-tap
 
       - name: Download binaries and calculate SHA256
         run: |
@@ -205,7 +205,7 @@ jobs:
 
       - name: Update Formula
         run: |
-          cd homebrew-clash
+          cd homebrew-tap
           VERSION=${{ needs.create-release.outputs.version }}
           VERSION_NUM=${VERSION#v}  # Remove 'v' prefix
 
@@ -220,7 +220,7 @@ jobs:
 
       - name: Commit and push changes
         run: |
-          cd homebrew-clash
+          cd homebrew-tap
           git config user.name "Clash Release Bot"
           git config user.email "bot@clash.sh"
           git add Formula/clash.rb
