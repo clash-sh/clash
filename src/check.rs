@@ -1,5 +1,6 @@
 use clash_sh::{Worktree, WorktreeManager};
 use serde::Serialize;
+use std::io::{IsTerminal, Read};
 use std::path::{Path, PathBuf};
 
 // ============================================================================
@@ -40,6 +41,8 @@ pub enum CheckError {
     PathResolution(PathBuf),
     /// Merge conflict detection failed for a worktree pair
     ConflictDetection { worktree: String, reason: String },
+    /// Failed to read or parse hook input from stdin
+    HookInput(String),
 }
 
 impl std::fmt::Display for CheckError {
@@ -63,6 +66,7 @@ impl std::fmt::Display for CheckError {
                     worktree, reason
                 )
             }
+            Self::HookInput(msg) => write!(f, "hook input error: {}", msg),
         }
     }
 }
@@ -73,12 +77,22 @@ impl std::fmt::Display for CheckError {
 
 /// Check a single file for conflicts across worktrees.
 ///
-/// Prints JSON to stdout and returns whether conflicts were found.
+/// - `Some(path)` — manual mode: resolve path, output JSON to stdout
+/// - `None` — hook mode: read file path from stdin JSON, output conflicts to stderr
+///
+/// Returns whether conflicts were found:
 /// - `Ok(false)` — no conflicts, exit 0
 /// - `Ok(true)` — conflicts found, exit 2
 /// - `Err(e)` — operational error, caller prints to stderr and exits 1
-pub fn run_check(worktrees: &WorktreeManager, path: &str) -> Result<bool, CheckError> {
-    let (current_wt, repo_relative) = resolve_file_path(path, worktrees)?;
+pub fn run_check(worktrees: &WorktreeManager, path: Option<&str>) -> Result<bool, CheckError> {
+    let hook_mode = path.is_none();
+
+    let path = match path {
+        Some(p) => p.to_string(),
+        None => read_hook_input()?,
+    };
+
+    let (current_wt, repo_relative) = resolve_file_path(&path, worktrees)?;
 
     let mut conflicts = Vec::new();
 
@@ -119,9 +133,53 @@ pub fn run_check(worktrees: &WorktreeManager, path: &str) -> Result<bool, CheckE
 
     // Serialization of simple String/bool fields cannot fail in practice
     let json = serde_json::to_string_pretty(&output).expect("CheckOutput is always serializable");
-    println!("{}", json);
+
+    if hook_mode {
+        // Hook mode: only output on conflicts (to stderr, which Claude sees on exit 2)
+        if has_conflicts {
+            eprintln!("{}", json);
+        }
+    } else {
+        // Manual mode: always output to stdout
+        println!("{}", json);
+    }
 
     Ok(has_conflicts)
+}
+
+// ============================================================================
+// Hook stdin reading
+// ============================================================================
+
+/// Read a file path from Claude Code's PreToolUse hook JSON on stdin.
+///
+/// Expected format: `{"tool_input": {"file_path": "src/main.rs"}, ...}`
+/// Returns the extracted file_path, or an error if stdin is a TTY,
+/// unreadable, or doesn't contain the expected structure.
+fn read_hook_input() -> Result<String, CheckError> {
+    let stdin = std::io::stdin();
+    if stdin.is_terminal() {
+        return Err(CheckError::HookInput(
+            "no path argument and stdin is a terminal\n\
+             Usage: clash check <path>          (manual mode)\n\
+             Usage: echo '{...}' | clash check  (hook mode)"
+                .to_string(),
+        ));
+    }
+
+    let mut buf = String::new();
+    stdin
+        .lock()
+        .read_to_string(&mut buf)
+        .map_err(|e| CheckError::HookInput(format!("failed to read stdin: {}", e)))?;
+
+    let json: serde_json::Value = serde_json::from_str(&buf)
+        .map_err(|e| CheckError::HookInput(format!("invalid JSON on stdin: {}", e)))?;
+
+    json["tool_input"]["file_path"]
+        .as_str()
+        .map(|s| s.to_string())
+        .ok_or_else(|| CheckError::HookInput("stdin JSON missing tool_input.file_path".to_string()))
 }
 
 // ============================================================================

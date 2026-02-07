@@ -31,8 +31,8 @@ enum Commands {
     },
     /// Check a single file for conflicts and active work across worktrees (JSON output)
     Check {
-        /// File path to check
-        path: String,
+        /// File path to check (reads from hook stdin if omitted)
+        path: Option<String>,
     },
 }
 
@@ -65,7 +65,7 @@ fn main() {
             }
         },
         Some(Commands::Check { path }) => match WorktreeManager::discover() {
-            Ok(worktrees) => match check::run_check(&worktrees, &path) {
+            Ok(worktrees) => match check::run_check(&worktrees, path.as_deref()) {
                 Ok(true) => std::process::exit(2),
                 Ok(false) => {}
                 Err(e) => {
