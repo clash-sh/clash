@@ -25,6 +25,8 @@ struct ConflictInfo {
     wt1_id: String,
     wt2_id: String,
     conflicting_files: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    error: Option<String>,
 }
 
 /// Handles the display of status information for worktrees and conflicts
@@ -111,17 +113,21 @@ impl<'a> StatusDisplay<'a> {
         let mut matrix: Vec<Vec<Option<Vec<String>>>> =
             vec![vec![None; self.worktrees.len()]; self.worktrees.len()];
 
-        // Map worktree branches to indices
-        let branch_to_index: HashMap<String, usize> = self
+        // Map worktree IDs to indices (IDs are unique, branches might not be)
+        let id_to_index: HashMap<String, usize> = self
             .worktrees
             .iter()
             .enumerate()
-            .map(|(i, wt)| (wt.branch.clone(), i))
+            .map(|(i, wt)| (wt.id.clone(), i))
             .collect();
 
         for result in pair_results {
-            let i = branch_to_index[&result.wt1.branch];
-            let j = branch_to_index[&result.wt2.branch];
+            // Skip errored pairs — they stay as None ("?" in display)
+            if result.error.is_some() {
+                continue;
+            }
+            let i = id_to_index[&result.wt1.id];
+            let j = id_to_index[&result.wt2.id];
             matrix[i][j] = Some(result.conflicting_files.clone());
             matrix[j][i] = Some(result.conflicting_files.clone());
         }
@@ -290,31 +296,46 @@ impl<'a> StatusDisplay<'a> {
 
     /// Display summary statistics
     fn display_summary(&self, pair_results: &[WorktreePairConflict]) {
-        let checked_pairs = pair_results.len();
-        let total_conflicts: usize = pair_results.iter().map(|r| r.conflicting_files.len()).sum();
+        if pair_results.is_empty() {
+            return;
+        }
 
-        if checked_pairs > 0 {
-            print!("\n{}: ", "Summary".bright_cyan().bold());
-            print!(
-                "Checked {} pair{}, ",
-                checked_pairs.to_string().bright_blue().bold(),
-                if checked_pairs == 1 { "" } else { "s" }
-            );
+        let error_count = pair_results.iter().filter(|r| r.error.is_some()).count();
+        let checked_pairs = pair_results.len() - error_count;
+        let total_conflicts: usize = pair_results
+            .iter()
+            .filter(|r| r.error.is_none())
+            .map(|r| r.conflicting_files.len())
+            .sum();
 
-            if total_conflicts == 0 {
-                println!("found {} conflicts ✅", "no".bright_green().bold());
+        print!("\n{}: ", "Summary".bright_cyan().bold());
+        print!(
+            "Checked {} pair{}, ",
+            checked_pairs.to_string().bright_blue().bold(),
+            if checked_pairs == 1 { "" } else { "s" }
+        );
+
+        if total_conflicts == 0 {
+            println!("found {} conflicts ✅", "no".bright_green().bold());
+        } else {
+            let conflict_color = if total_conflicts == 1 {
+                total_conflicts.to_string().bright_yellow().bold()
             } else {
-                let conflict_color = if total_conflicts == 1 {
-                    total_conflicts.to_string().bright_yellow().bold()
-                } else {
-                    total_conflicts.to_string().bright_red().bold()
-                };
-                println!(
-                    "found {} total conflict{}",
-                    conflict_color,
-                    if total_conflicts == 1 { "" } else { "s" }
-                );
-            }
+                total_conflicts.to_string().bright_red().bold()
+            };
+            println!(
+                "found {} total conflict{}",
+                conflict_color,
+                if total_conflicts == 1 { "" } else { "s" }
+            );
+        }
+
+        if error_count > 0 {
+            println!(
+                "  {} {} failed to check",
+                error_count.to_string().bright_red().bold(),
+                if error_count == 1 { "pair" } else { "pairs" }
+            );
         }
     }
 
@@ -375,11 +396,12 @@ pub fn run_status(worktrees: &WorktreeManager, json: bool) {
         let conflicts: Vec<ConflictInfo> = worktrees
             .check_all_conflicts()
             .into_iter()
-            .filter(|c| !c.conflicting_files.is_empty()) // Only include actual conflicts
+            .filter(|c| !c.conflicting_files.is_empty() || c.error.is_some())
             .map(|c| ConflictInfo {
                 wt1_id: c.wt1.id,
                 wt2_id: c.wt2.id,
                 conflicting_files: c.conflicting_files,
+                error: c.error,
             })
             .collect();
 

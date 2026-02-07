@@ -1,6 +1,10 @@
-use clash_sh::WorktreeManager;
+use clash_sh::{Worktree, WorktreeManager};
 use serde::Serialize;
 use std::path::{Path, PathBuf};
+
+// ============================================================================
+// Output types
+// ============================================================================
 
 #[derive(Debug, Serialize)]
 struct CheckOutput {
@@ -18,29 +22,63 @@ struct FileConflict {
     has_active_changes: bool,
 }
 
-/// Run the check command - checks a single file for conflicts across worktrees.
+// ============================================================================
+// Error type
+// ============================================================================
+
+/// Errors specific to the check command.
 ///
-/// Returns true if conflicts were found (caller should exit with code 2).
-pub fn run_check(worktrees: &WorktreeManager, path: &str) -> bool {
-    let current_dir = match std::env::current_dir() {
-        Ok(dir) => dir.canonicalize().unwrap_or(dir),
-        Err(e) => {
-            eprintln!("Error: failed to get current directory: {}", e);
-            return true;
-        }
-    };
+/// These map to exit code 1 (operational error) — distinct from
+/// exit code 2 (conflicts found) and exit code 0 (clear).
+#[derive(Debug)]
+pub enum CheckError {
+    /// Could not determine current directory
+    CurrentDir(std::io::Error),
+    /// The resolved file path is not inside any known worktree
+    NotInWorktree(PathBuf),
+    /// Could not strip worktree prefix from path
+    PathResolution(PathBuf),
+    /// Merge conflict detection failed for a worktree pair
+    ConflictDetection { worktree: String, reason: String },
+}
 
-    // Find which worktree we're running from
-    let current_wt = match worktrees.find_containing(&current_dir) {
-        Some(wt) => wt,
-        None => {
-            eprintln!("Error: not running from within a known worktree");
-            return true;
+impl std::fmt::Display for CheckError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::CurrentDir(e) => write!(f, "failed to get current directory: {}", e),
+            Self::NotInWorktree(p) => {
+                write!(f, "path '{}' is not inside any known worktree", p.display())
+            }
+            Self::PathResolution(p) => {
+                write!(
+                    f,
+                    "could not resolve '{}' relative to worktree root",
+                    p.display()
+                )
+            }
+            Self::ConflictDetection { worktree, reason } => {
+                write!(
+                    f,
+                    "conflict check failed for worktree '{}': {}",
+                    worktree, reason
+                )
+            }
         }
-    };
+    }
+}
 
-    // Make path relative to worktree root
-    let normalized_path = to_repo_relative(path, &current_wt.path);
+// ============================================================================
+// Main entry point
+// ============================================================================
+
+/// Check a single file for conflicts across worktrees.
+///
+/// Prints JSON to stdout and returns whether conflicts were found.
+/// - `Ok(false)` — no conflicts, exit 0
+/// - `Ok(true)` — conflicts found, exit 2
+/// - `Err(e)` — operational error, caller prints to stderr and exits 1
+pub fn run_check(worktrees: &WorktreeManager, path: &str) -> Result<bool, CheckError> {
+    let (current_wt, repo_relative) = resolve_file_path(path, worktrees)?;
 
     let mut conflicts = Vec::new();
 
@@ -49,12 +87,16 @@ pub fn run_check(worktrees: &WorktreeManager, path: &str) -> bool {
             continue;
         }
 
-        // Check merge conflicts between current and other worktree
-        let conflicting_files = current_wt.conflicts_with(other_wt).unwrap_or_default();
-        let has_merge_conflict = conflicting_files.iter().any(|f| f == &normalized_path);
+        let merge_conflicts =
+            current_wt
+                .conflicts_with(other_wt)
+                .map_err(|e| CheckError::ConflictDetection {
+                    worktree: other_wt.id.clone(),
+                    reason: e.to_string(),
+                })?;
 
-        // Check if file has uncommitted changes in other worktree
-        let has_active_changes = check_file_active(&other_wt.path, &normalized_path);
+        let has_merge_conflict = merge_conflicts.iter().any(|f| f == &repo_relative);
+        let has_active_changes = file_has_active_changes(&other_wt.path, &repo_relative);
 
         if has_merge_conflict || has_active_changes {
             conflicts.push(FileConflict {
@@ -66,45 +108,77 @@ pub fn run_check(worktrees: &WorktreeManager, path: &str) -> bool {
         }
     }
 
-    let is_conflicted = !conflicts.is_empty();
+    let has_conflicts = !conflicts.is_empty();
 
     let output = CheckOutput {
-        file: normalized_path,
+        file: repo_relative,
         current_worktree: current_wt.id.clone(),
         current_branch: current_wt.branch.clone(),
         conflicts,
     };
 
-    match serde_json::to_string_pretty(&output) {
-        Ok(json) => println!("{}", json),
-        Err(e) => eprintln!("Error serializing output: {}", e),
-    }
+    // Serialization of simple String/bool fields cannot fail in practice
+    let json = serde_json::to_string_pretty(&output).expect("CheckOutput is always serializable");
+    println!("{}", json);
 
-    is_conflicted
+    Ok(has_conflicts)
 }
 
-/// Convert a file path to be relative to the worktree root.
+// ============================================================================
+// Path resolution
+// ============================================================================
+
+/// Resolve a file path to its containing worktree and repo-relative path.
 ///
-/// Relative paths are returned as-is (assumed repo-relative).
-/// Absolute paths are stripped of the worktree root prefix.
-fn to_repo_relative(path: &str, worktree_root: &Path) -> String {
-    let path_buf = PathBuf::from(path);
+/// Handles both absolute paths (from hooks, e.g. `/repo/src/auth.rs`)
+/// and relative paths (from CLI, e.g. `src/auth.rs` or `../lib/file.rs`).
+///
+/// Strategy:
+/// 1. If relative, join with canonicalized cwd to make absolute
+/// 2. Canonicalize if possible (resolves symlinks and `..` components)
+/// 3. Walk up the path to find the containing worktree
+/// 4. Strip the worktree prefix to get the repo-relative path
+fn resolve_file_path<'a>(
+    path: &str,
+    worktrees: &'a WorktreeManager,
+) -> Result<(&'a Worktree, String), CheckError> {
+    let input = Path::new(path);
 
-    if path_buf.is_absolute() {
-        path_buf
-            .strip_prefix(worktree_root)
-            .map(|p| p.to_string_lossy().to_string())
-            .unwrap_or_else(|_| path.to_string())
+    let abs_path = if input.is_absolute() {
+        PathBuf::from(path)
     } else {
-        path.to_string()
-    }
+        let cwd = std::env::current_dir()
+            .and_then(|d| d.canonicalize().or(Ok(d)))
+            .map_err(CheckError::CurrentDir)?;
+        cwd.join(input)
+    };
+
+    // Canonicalize if possible (resolves symlinks and .. components).
+    // Fall back to raw path — file might not exist yet (PreToolUse on Write).
+    let abs_path = abs_path.canonicalize().unwrap_or(abs_path);
+
+    let wt = worktrees
+        .find_containing(&abs_path)
+        .ok_or_else(|| CheckError::NotInWorktree(abs_path.clone()))?;
+
+    let rel = abs_path
+        .strip_prefix(&wt.path)
+        .map_err(|_| CheckError::PathResolution(abs_path.clone()))?
+        .to_string_lossy()
+        .to_string();
+
+    Ok((wt, rel))
 }
+
+// ============================================================================
+// Active changes detection
+// ============================================================================
 
 /// Check if a file has uncommitted changes in a worktree.
 ///
-/// Compares the file on disk against its blob in HEAD using gix.
-/// Returns true if the file differs from HEAD (modified/new/deleted).
-fn check_file_active(worktree_path: &Path, file_path: &str) -> bool {
+/// Compares the file on disk against HEAD. Returns true if the file
+/// differs from HEAD (modified, new, or deleted).
+fn file_has_active_changes(worktree_path: &Path, file_path: &str) -> bool {
     let repo = match gix::open(worktree_path) {
         Ok(r) => r,
         Err(_) => return false,
@@ -116,26 +190,24 @@ fn check_file_active(worktree_path: &Path, file_path: &str) -> bool {
     };
 
     let disk_path = workdir.join(file_path);
-    let file_on_disk = disk_path.exists();
-
-    // Get the file's blob from HEAD
+    let exists_on_disk = disk_path.exists();
     let head_blob = head_file_contents(&repo, file_path);
 
-    match (head_blob, file_on_disk) {
-        (None, false) => false,   // Not in HEAD, not on disk: no change
-        (None, true) => true,     // New file (not tracked in HEAD)
+    match (head_blob, exists_on_disk) {
+        (None, false) => false,   // Not tracked, not on disk
+        (None, true) => true,     // New untracked file
         (Some(_), false) => true, // Deleted from disk
         (Some(head_data), true) => {
-            // Compare HEAD blob with file on disk
             match std::fs::read(&disk_path) {
                 Ok(disk_data) => head_data != disk_data,
-                Err(_) => false,
+                // File exists but unreadable — conservatively assume changed
+                Err(_) => true,
             }
         }
     }
 }
 
-/// Get the contents of a file from HEAD in the given repository.
+/// Read a file's contents from HEAD in the given repository.
 fn head_file_contents(repo: &gix::Repository, file_path: &str) -> Option<Vec<u8>> {
     let mut head = repo.head().ok()?;
     let head_id = head.try_peel_to_id().ok()??;

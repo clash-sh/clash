@@ -65,11 +65,14 @@ fn main() {
             }
         },
         Some(Commands::Check { path }) => match WorktreeManager::discover() {
-            Ok(worktrees) => {
-                if check::run_check(&worktrees, &path) {
-                    std::process::exit(2);
+            Ok(worktrees) => match check::run_check(&worktrees, &path) {
+                Ok(true) => std::process::exit(2),
+                Ok(false) => {}
+                Err(e) => {
+                    eprintln!("Error: {}", e);
+                    std::process::exit(1);
                 }
-            }
+            },
             Err(e) => {
                 eprintln!("Error: {}", e);
                 std::process::exit(1);
