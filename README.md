@@ -75,7 +75,9 @@ brew tap clash-sh/tap && brew install clash     # Homebrew
 cargo install clash-sh                          # From crates.io
 ```
 
-### 2. Set Up the Hook (Claude Code)
+### 2. Set Up Your AI Agent
+
+**Claude Code (Recommended: Hook)**
 
 Add this to `.claude/settings.json` — Clash will automatically check for conflicts before every file write:
 
@@ -94,7 +96,22 @@ Add this to `.claude/settings.json` — Clash will automatically check for confl
 
 #### **That's it.** Clash will prompt you whenever Claude tries to edit a file that conflicts with another worktree.
 
-### 3. Manual Usage
+**Cursor / Windsurf / Other Agents (Manual)**
+
+If hooks aren't available, add to your project instructions (e.g. `.claude/instructions.md`, `.cursorrules`):
+
+```markdown
+After each commit, run `clash status --json` to check for merge conflicts with other worktrees.
+If conflicts are detected, examine the conflicting files in those worktrees and adapt your
+approach to avoid or minimize conflicts.
+
+Available commands:
+- clash check src/file.rs (check a single file)
+- clash status --json (output as JSON)
+- clash watch (real-time monitoring)
+```
+
+### 3. Manual CLI Usage
 
 ```bash
 # Check a single file for conflicts
@@ -228,33 +245,6 @@ clash status --json | jq '.conflicts[] | select(.conflicting_files | length > 0)
 ![Multiple AI agents working in parallel with Clash coordination](https://clash.sh/demos/multi-agent-clash-demo-v1.gif)
 
 *Coordinating multiple AI agents across worktrees - each agent works independently while using Clash for monitoring for conflicts*
-
-### For Claude Code (Recommended: Hook)
-
-The best integration is the [PreToolUse hook](#hook-integration-claude-code) — it fires automatically before every file write with zero ongoing effort. See the [Hook Integration](#hook-integration-claude-code) section above for setup.
-
-### For Claude Code / Cursor / Windsurf (Manual)
-
-If hooks aren't available (e.g. Cursor, Windsurf), add to your project instructions or `.claude/instructions.md`:
-
-```markdown
-After each commit, run `clash status --json` to check for merge conflicts with other worktrees.
-If conflicts are detected, examine the conflicting files in those worktrees and adapt your
-approach to avoid or minimize conflicts. This prevents wasted work from incompatible changes.
-
-Example workflow:
-1. Make changes and commit
-2. Run: clash status --json
-3. If conflicts found: Review the conflicting worktree's changes
-4. Adapt your implementation to work with their changes
-
-Available commands:
-- clash --help (show all commands)
-- clash check src/file.rs (check a single file)
-- clash status (check for conflicts)
-- clash status --json (output as JSON)
-- clash watch (real-time monitoring)
-```
 
 ### MCP Server (Coming Soon)
 
