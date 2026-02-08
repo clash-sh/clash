@@ -76,6 +76,10 @@ Clash detects merge conflicts **between all worktree pairs** during development,
 
 *Automatic conflict detection — Clash prompts you before a conflicting edit goes through*
 
+**Conflict warning in action** — When a file has conflicts with multiple worktrees, Clash surfaces a clear warning so you can coordinate:
+
+![Clash warns about merge conflicts with multiple worktrees](https://clash.sh/demos/clash-hook-conflict-warning.png)
+
 **CLI usage** — Ask your agent to use Clash directly for a full conflict overview:
 
 ![Clash alerts Claude Code to conflicts in another worktree, enabling smarter parallel development](https://clash.sh/demos/claude-using-clash-demo.gif)
