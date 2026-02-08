@@ -99,10 +99,12 @@ cargo install clash-sh                          # From crates.io
 
 **Claude Code (Recommended: Hook)**
 
-Add this to `.claude/settings.json` — Clash will **automatically check for conflicts** before every file write:
+Add the `hooks` key to your `.claude/settings.json` (alongside your existing settings) — Clash will **automatically check for conflicts** before every file write:
 
 ```json
 {
+  "model": "...",
+  "enabledPlugins": { "...": true },
   "hooks": {
     "PreToolUse": [
       {
@@ -155,10 +157,12 @@ clash watch
 
 The best way to use Clash with Claude Code — **automatic conflict detection before every file write, zero ongoing effort.**
 
-Add this to your Claude Code settings (`.claude/settings.json`):
+Add the `hooks` key to your Claude Code settings (`.claude/settings.json`):
 
 ```json
 {
+  "model": "...",
+  "enabledPlugins": { "...": true },
   "hooks": {
     "PreToolUse": [
       {
