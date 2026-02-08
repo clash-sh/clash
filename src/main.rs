@@ -66,8 +66,8 @@ fn main() {
         },
         Some(Commands::Check { path }) => match WorktreeManager::discover() {
             Ok(worktrees) => match check::run_check(&worktrees, path.as_deref()) {
-                Ok(true) => std::process::exit(2),
-                Ok(false) => {}
+                Ok(true) if path.is_some() => std::process::exit(2),
+                Ok(_) => {}
                 Err(e) => {
                     eprintln!("Error: {}", e);
                     std::process::exit(1);

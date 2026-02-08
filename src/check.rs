@@ -23,6 +23,26 @@ struct FileConflict {
     has_active_changes: bool,
 }
 
+/// Claude Code hook JSON output format.
+///
+/// When output on stdout with exit 0, Claude Code interprets
+/// `permissionDecision` to decide whether to allow, deny, or ask.
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct HookOutput {
+    hook_specific_output: HookDecision,
+}
+
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct HookDecision {
+    hook_event_name: &'static str,
+    permission_decision: &'static str,
+    permission_decision_reason: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    additional_context: Option<String>,
+}
+
 // ============================================================================
 // Error type
 // ============================================================================
@@ -77,12 +97,12 @@ impl std::fmt::Display for CheckError {
 
 /// Check a single file for conflicts across worktrees.
 ///
-/// - `Some(path)` — manual mode: resolve path, output JSON to stdout
-/// - `None` — hook mode: read file path from stdin JSON, output conflicts to stderr
+/// - `Some(path)` — manual mode: JSON to stdout, exit 2 if conflicts
+/// - `None` — hook mode: hook decision JSON to stdout (ask on conflicts), always exit 0
 ///
 /// Returns whether conflicts were found:
-/// - `Ok(false)` — no conflicts, exit 0
-/// - `Ok(true)` — conflicts found, exit 2
+/// - `Ok(false)` — no conflicts
+/// - `Ok(true)` — conflicts found
 /// - `Err(e)` — operational error, caller prints to stderr and exits 1
 pub fn run_check(worktrees: &WorktreeManager, path: Option<&str>) -> Result<bool, CheckError> {
     let hook_mode = path.is_none();
@@ -135,9 +155,20 @@ pub fn run_check(worktrees: &WorktreeManager, path: Option<&str>) -> Result<bool
     let json = serde_json::to_string_pretty(&output).expect("CheckOutput is always serializable");
 
     if hook_mode {
-        // Hook mode: only output on conflicts (to stderr, which Claude sees on exit 2)
+        // Hook mode: output hook decision JSON to stdout so Claude Code prompts the user
         if has_conflicts {
-            eprintln!("{}", json);
+            let reason = format_conflict_reason(&output);
+            let hook_output = HookOutput {
+                hook_specific_output: HookDecision {
+                    hook_event_name: "PreToolUse",
+                    permission_decision: "ask",
+                    permission_decision_reason: reason.clone(),
+                    additional_context: Some(reason),
+                },
+            };
+            let hook_json =
+                serde_json::to_string(&hook_output).expect("HookOutput is always serializable");
+            println!("{}", hook_json);
         }
     } else {
         // Manual mode: always output to stdout
@@ -180,6 +211,30 @@ fn read_hook_input() -> Result<String, CheckError> {
         .as_str()
         .map(|s| s.to_string())
         .ok_or_else(|| CheckError::HookInput("stdin JSON missing tool_input.file_path".to_string()))
+}
+
+// ============================================================================
+// Hook output formatting
+// ============================================================================
+
+/// Build a human-readable conflict reason for the hook prompt.
+fn format_conflict_reason(output: &CheckOutput) -> String {
+    let mut parts: Vec<String> = Vec::new();
+    for c in &output.conflicts {
+        let kind = match (c.has_merge_conflict, c.has_active_changes) {
+            (true, true) => "merge conflict + active changes",
+            (true, false) => "merge conflict",
+            (false, true) => "active changes",
+            (false, false) => continue,
+        };
+        parts.push(format!("{} [{}]: {}", c.worktree, c.branch, kind));
+    }
+    format!(
+        "Conflicts on {} with {} worktree(s):\n{}",
+        output.file,
+        parts.len(),
+        parts.join("\n")
+    )
 }
 
 // ============================================================================
