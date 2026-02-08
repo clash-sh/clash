@@ -123,14 +123,14 @@ Add the `hooks` key to your `.claude/settings.json` (alongside your existing set
 If hooks aren't available, add to your project instructions (e.g. `.claude/instructions.md`, `.cursorrules`):
 
 ```markdown
-After each commit, run `clash status --json` to check for merge conflicts with other worktrees.
-If conflicts are detected, examine the conflicting files in those worktrees and adapt your
-approach to avoid or minimize conflicts.
+IMPORTANT: Before editing any file, run `clash check <file>` to check for merge conflicts
+with other worktrees. If conflicts are detected, examine the conflicting files and adapt
+your approach to avoid or minimize them.
 
-Available commands:
-- clash check src/file.rs (check a single file)
-- clash status --json (output as JSON)
-- clash watch (real-time monitoring)
+Run `clash status` periodically (especially before and after commits) to get a full
+conflict overview across all worktrees.
+
+Run `clash --help` for all available commands.
 ```
 
 ### 3. Manual CLI Usage
