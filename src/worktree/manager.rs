@@ -19,14 +19,31 @@ impl WorktreeManager {
         Self::discover_from(".")
     }
 
-    /// Discover all worktrees in the repository at the given path
+    /// Discover all worktrees from any path inside a repository.
+    ///
+    /// Accepts a file path, directory path, or `.` for cwd. Resolves
+    /// relative paths against cwd, then uses `gix::discover` to walk
+    /// up and find the containing git repository.
     pub fn discover_from(path: &str) -> Result<Self> {
-        let path_buf = PathBuf::from(path);
-        // Canonicalize path for better error messages
-        let canonical_path = path_buf.canonicalize().unwrap_or_else(|_| path_buf.clone());
+        let input = PathBuf::from(path);
+        let abs_path = if input.is_absolute() {
+            input
+        } else {
+            std::env::current_dir()
+                .and_then(|d| d.canonicalize().or(Ok(d)))
+                .unwrap_or_else(|_| input.clone())
+                .join(&input)
+        };
 
-        let repo = gix::discover(path).map_err(|_| WorktreeError::NotARepository {
-            path: canonical_path.clone(),
+        // gix::discover expects a directory; if given a file, use its parent
+        let discover_path = if abs_path.is_file() {
+            abs_path.parent().unwrap_or(&abs_path).to_path_buf()
+        } else {
+            abs_path.clone()
+        };
+
+        let repo = gix::discover(&discover_path).map_err(|_| WorktreeError::NotARepository {
+            path: abs_path.clone(),
         })?;
 
         let mut items = Vec::new();

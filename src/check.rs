@@ -4,32 +4,6 @@ use std::io::{IsTerminal, Read};
 use std::path::{Path, PathBuf};
 
 // ============================================================================
-// Worktree discovery from file path
-// ============================================================================
-
-/// Discover worktrees by resolving the file path to an absolute path,
-/// then discovering the git repo from the file's parent directory.
-///
-/// This allows clash to work regardless of cwd, as long as the target
-/// file is inside a git worktree.
-fn discover_from_file(path: &str) -> Result<WorktreeManager, CheckError> {
-    let abs_path = if Path::new(path).is_absolute() {
-        PathBuf::from(path)
-    } else {
-        let cwd = std::env::current_dir()
-            .and_then(|d| d.canonicalize().or(Ok(d)))
-            .map_err(CheckError::CurrentDir)?;
-        cwd.join(path)
-    };
-
-    let parent = abs_path.parent().unwrap_or(Path::new("."));
-    let parent_str = parent.to_str().unwrap_or(".");
-
-    WorktreeManager::discover_from(parent_str)
-        .map_err(|e| CheckError::HookInput(format!("cannot discover worktrees from {}: {}", parent_str, e)))
-}
-
-// ============================================================================
 // Output types
 // ============================================================================
 
@@ -139,7 +113,8 @@ pub fn run_check(path: Option<&str>) -> Result<bool, CheckError> {
         None => (read_hook_input()?, true),
     };
 
-    let worktrees = discover_from_file(&file_path)?;
+    let worktrees = WorktreeManager::discover_from(&file_path)
+        .map_err(|e| CheckError::HookInput(format!("cannot discover worktrees: {}", e)))?;
     run_check_inner(&worktrees, &file_path, hook_mode)
 }
 
