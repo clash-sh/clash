@@ -35,11 +35,12 @@ impl WorktreeManager {
                 .join(&input)
         };
 
-        // gix::discover expects a directory; if given a file, use its parent
-        let discover_path = if abs_path.is_file() {
-            abs_path.parent().unwrap_or(&abs_path).to_path_buf()
-        } else {
+        // gix::discover expects a directory; if the path isn't a directory
+        // (file or non-existent path for new files), use its parent
+        let discover_path = if abs_path.is_dir() {
             abs_path.clone()
+        } else {
+            abs_path.parent().unwrap_or(&abs_path).to_path_buf()
         };
 
         let repo = gix::discover(&discover_path).map_err(|_| WorktreeError::NotARepository {
