@@ -20,12 +20,12 @@ impl WorktreeManager {
     }
 
     /// Discover all worktrees in the repository at the given path
-    fn discover_from(path: &str) -> Result<Self> {
+    pub fn discover_from(path: &str) -> Result<Self> {
         let path_buf = PathBuf::from(path);
         // Canonicalize path for better error messages
         let canonical_path = path_buf.canonicalize().unwrap_or_else(|_| path_buf.clone());
 
-        let repo = gix::open(path).map_err(|_| WorktreeError::NotARepository {
+        let repo = gix::discover(path).map_err(|_| WorktreeError::NotARepository {
             path: canonical_path.clone(),
         })?;
 

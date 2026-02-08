@@ -4,6 +4,30 @@ use std::io::{IsTerminal, Read};
 use std::path::{Path, PathBuf};
 
 // ============================================================================
+// Hook-mode entry point (discovers worktrees from file path)
+// ============================================================================
+
+/// Hook-mode entry point: reads file path from stdin, discovers worktrees
+/// from that file's location, then checks for conflicts.
+///
+/// This allows the hook to work regardless of where `claude` was launched,
+/// as long as the file being edited is inside a git worktree.
+pub fn run_check_from_hook() -> Result<bool, CheckError> {
+    let file_path = read_hook_input()?;
+
+    // Discover worktrees from the file's parent directory
+    let parent = Path::new(&file_path)
+        .parent()
+        .unwrap_or(Path::new("."));
+    let parent_str = parent.to_str().unwrap_or(".");
+
+    let worktrees = WorktreeManager::discover_from(parent_str)
+        .map_err(|e| CheckError::HookInput(format!("cannot discover worktrees from {}: {}", parent_str, e)))?;
+
+    run_check_inner(&worktrees, &file_path, true)
+}
+
+// ============================================================================
 // Output types
 // ============================================================================
 
@@ -105,14 +129,21 @@ impl std::fmt::Display for CheckError {
 /// - `Ok(true)` — conflicts found
 /// - `Err(e)` — operational error, caller prints to stderr and exits 1
 pub fn run_check(worktrees: &WorktreeManager, path: Option<&str>) -> Result<bool, CheckError> {
-    let hook_mode = path.is_none();
+    match path {
+        Some(p) => run_check_inner(worktrees, p, false),
+        None => {
+            let file_path = read_hook_input()?;
+            run_check_inner(worktrees, &file_path, true)
+        }
+    }
+}
 
-    let path = match path {
-        Some(p) => p.to_string(),
-        None => read_hook_input()?,
-    };
-
-    let (current_wt, repo_relative) = resolve_file_path(&path, worktrees)?;
+fn run_check_inner(
+    worktrees: &WorktreeManager,
+    path: &str,
+    hook_mode: bool,
+) -> Result<bool, CheckError> {
+    let (current_wt, repo_relative) = resolve_file_path(path, worktrees)?;
 
     let mut conflicts = Vec::new();
 

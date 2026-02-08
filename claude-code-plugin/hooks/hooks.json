@@ -1,0 +1,16 @@
+{
+  "description": "Detect merge conflicts across git worktrees before writing files",
+  "hooks": {
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "clash check"
+          }
+        ],
+        "matcher": "Write|Edit|MultiEdit"
+      }
+    ]
+  }
+}
