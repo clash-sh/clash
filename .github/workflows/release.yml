@@ -212,7 +212,7 @@ jobs:
           # Create updated formula
           cat > Formula/clash.rb << 'FORMULA_EOF'
           class Clash < Formula
-            desc "Manage merge conflicts across git worktrees for parallel AI coding agents"
+            desc "Avoid merge conflicts across git worktrees for parallel AI coding agents"
             homepage "https://clash.sh"
             version "$VERSION_NUM"
             license "MIT"

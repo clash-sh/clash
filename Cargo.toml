@@ -1,11 +1,11 @@
 [package]
 name = "clash-sh"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 rust-version = "1.93.0"
 authors = ["Clash Contributors"]
 license = "MIT"
-description = "Manage merge conflicts across git worktrees for parallel AI coding agents"
+description = "Avoid merge conflicts across git worktrees for parallel AI coding agents"
 readme = "README.md"
 repository = "https://github.com/clash-sh/clash"
 homepage = "https://clash.sh"
