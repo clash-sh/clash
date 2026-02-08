@@ -28,14 +28,13 @@ It's designed for developers running multiple AI coding agents (*Claude Code, Co
   - [Set Up Your AI Agent](#2-set-up-your-ai-agent)
   - [Manual CLI Usage](#3-manual-cli-usage)
 - [Core Features](#core-features)
-  - [Hook Integration](#hook-integration-claude-code--recommended)
+  - [Plugin Integration](#plugin-integration-claude-code--recommended)
   - [Check Command](#check-command-manual)
   - [Status Command](#status-command)
   - [Watch Mode](#watch-mode)
   - [JSON Output](#json-output)
 - [Example: Multi-Agent Workflow](#example-multi-agent-workflow)
 - [How It Works](#how-it-works)
-- [Roadmap](#roadmap)
 - [Use Cases](#use-cases)
 - [Architecture](#architecture)
 - [Contributing](#contributing)
@@ -97,14 +96,24 @@ cargo install clash-sh                          # From crates.io
 
 ### 2. Set Up Your AI Agent
 
-**Claude Code (Recommended: Hook)**
+**Claude Code (Recommended: Plugin)**
 
-Add the `hooks` key to your `.claude/settings.json` (alongside your existing settings) — Clash will **automatically check for conflicts** before every file write:
+Install the Clash plugin — it automatically checks for conflicts before every file write:
+
+```bash
+claude plugin marketplace add clash-sh/clash
+claude plugin install clash@clash-sh
+```
+
+**That's it.** Clash will prompt you whenever Claude tries to edit a file that conflicts with another worktree.
+
+<details>
+<summary><strong>Alternative: Manual hook setup</strong></summary>
+
+If you prefer not to use the plugin, add the `hooks` key to your `.claude/settings.json`:
 
 ```json
 {
-  "model": "...",
-  "enabledPlugins": { "...": true },
   "hooks": {
     "PreToolUse": [
       {
@@ -116,7 +125,7 @@ Add the `hooks` key to your `.claude/settings.json` (alongside your existing set
 }
 ```
 
-#### **That's it.** Clash will prompt you whenever Claude tries to edit a file that conflicts with another worktree.
+</details>
 
 **Codex / Cursor / Windsurf / Other Agents (Manual)**
 
@@ -153,26 +162,24 @@ clash watch
 
 ## Core Features
 
-### Hook Integration (Claude Code) — Recommended
+### Plugin Integration (Claude Code) — Recommended
 
 The best way to use Clash with Claude Code — **automatic conflict detection before every file write, zero ongoing effort.**
 
-Add the `hooks` key to your Claude Code settings (`.claude/settings.json`):
+```bash
+claude plugin marketplace add clash-sh/clash
+claude plugin install clash@clash-sh
+```
+
+Or manually add the hook to your `.claude/settings.json`:
 
 ```json
 {
-  "model": "...",
-  "enabledPlugins": { "...": true },
   "hooks": {
     "PreToolUse": [
       {
         "matcher": "Write|Edit|MultiEdit",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "clash check"
-          }
-        ]
+        "hooks": [{ "type": "command", "command": "clash check" }]
       }
     ]
   }
@@ -265,19 +272,6 @@ Clash uses `git merge-tree` (via the *gix* library) to perform **three-way merge
 4. **Reports** conflicting files
 
 This is **100% read-only** — your repository is *never* modified.
-
-## Roadmap
-
-### v0.1.0 (Current)
-- ✅ Conflict detection across all worktrees
-- ✅ Real-time watch mode
-- ✅ JSON output for automation/agent use
-- ✅ Beautiful conflict matrix display
-- ✅ Single-file conflict check (`clash check`)
-- ✅ Claude Code PreToolUse hook integration
-
-### v0.2.0 (Next)
-- [ ] MCP server for AI agent integration — agents discover and use Clash automatically
 
 ## Use Cases
 
