@@ -19,6 +19,28 @@ It's designed for developers running multiple AI coding agents (Claude Code, Cod
   <a href="https://github.com/clash-sh/clash/actions"><img src="https://github.com/clash-sh/clash/workflows/CI/badge.svg" alt="CI"></a>
 </p>
 
+## Table of Contents
+
+- [Problem Statement](#problem-statement-with-some-context)
+- [Clash - The Saviour](#clash---the-saviour)
+- [Quick Start](#quick-start)
+  - [Install](#1-install)
+  - [Set Up Your AI Agent](#2-set-up-your-ai-agent)
+  - [Manual CLI Usage](#3-manual-cli-usage)
+- [Core Features](#core-features)
+  - [Hook Integration](#hook-integration-claude-code--recommended)
+  - [Check Command](#check-command-manual)
+  - [Status Command](#status-command)
+  - [Watch Mode](#watch-mode)
+  - [JSON Output](#json-output)
+- [Example Workflow](#an-example-workflow-with-2-instances-co-ordinating-with-clash)
+- [How It Works](#how-it-works)
+- [Roadmap](#roadmap)
+- [Use Cases](#use-cases)
+- [Architecture](#architecture)
+- [Contributing](#contributing)
+- [FAQ](#faq)
+
 ## Problem Statement with Some Context
 
 AI coding agents like Claude Code have transformed software development as we know it. Developers now can run 3-6+ agents simultaneously each working on a different feature/bug fix. The recommended approach put forward by
@@ -51,7 +73,7 @@ Clash detects merge conflicts **between all worktree pairs** during development,
 
 ### Clash in Action
 
-**Hook integration** — Clash automatically detects conflicts before Claude Code writes a file:
+**[Hook integration](#hook-integration-claude-code--recommended)** — Clash automatically detects conflicts before Claude Code writes a file. A single line in your settings and every file edit is guarded — no prompts to remember, no commands to run:
 
 ![Clash hook fires before Claude Code writes a conflicting file](https://clash.sh/demos/clash-check-hook-demo.gif)
 
@@ -96,7 +118,7 @@ Add this to `.claude/settings.json` — Clash will automatically check for confl
 
 #### **That's it.** Clash will prompt you whenever Claude tries to edit a file that conflicts with another worktree.
 
-**Cursor / Windsurf / Other Agents (Manual)**
+**Codex / Cursor / Windsurf / Other Agents (Manual)**
 
 If hooks aren't available, add to your project instructions (e.g. `.claude/instructions.md`, `.cursorrules`):
 
