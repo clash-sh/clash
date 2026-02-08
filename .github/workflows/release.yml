@@ -154,6 +154,11 @@ jobs:
             echo "Version mismatch: tag is $VERSION_NUM but Cargo.toml has $CARGO_VERSION"
             exit 1
           fi
+          PLUGIN_VERSION=$(jq -r '.version' plugins/clash/.claude-plugin/plugin.json)
+          if [ "$VERSION_NUM" != "$PLUGIN_VERSION" ]; then
+            echo "Version mismatch: tag is $VERSION_NUM but plugin.json has $PLUGIN_VERSION"
+            exit 1
+          fi
 
       - name: Publish to crates.io
         run: cargo publish --allow-dirty
