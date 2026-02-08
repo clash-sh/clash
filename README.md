@@ -75,7 +75,7 @@ Clash detects merge conflicts **between all worktree pairs** during development,
 
 ![Clash hook fires before Claude Code writes a conflicting file](https://clash.sh/demos/clash-check-hook-demo.gif)
 
-*Zero-config conflict detection — Clash prompts you before a conflicting edit goes through*
+*Automatic conflict detection — Clash prompts you before a conflicting edit goes through*
 
 **CLI usage** — Ask your agent to use Clash directly for a full conflict overview:
 
