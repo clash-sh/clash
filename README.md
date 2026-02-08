@@ -15,7 +15,7 @@ It's designed for developers running multiple AI coding agents (*Claude Code, Co
 <p align="center">
   <a href="https://rust-lang.org"><img src="https://img.shields.io/badge/Rust-1.93+-orange.svg" alt="Rust: 1.93+"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT"></a>
-  <a href="https://crates.io/crates/clash-sh"><img src="https://img.shields.io/crates/v/clash-sh.svg" alt="Crates.io"></a>
+  <a href="https://github.com/clash-sh/clash/releases/latest"><img src="https://img.shields.io/github/v/release/clash-sh/clash" alt="version"></a>
   <a href="https://github.com/clash-sh/clash/actions"><img src="https://github.com/clash-sh/clash/workflows/CI/badge.svg" alt="CI"></a>
 </p>
 
