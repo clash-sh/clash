@@ -2,6 +2,7 @@ use clap::{Parser, Subcommand};
 use clash_sh::WorktreeManager;
 use colored::control;
 
+mod check;
 mod status;
 mod watch;
 
@@ -28,6 +29,11 @@ enum Commands {
         // we should wait for changes to settle before rechecking conflicts,
         // currently hardcoded to 1s
     },
+    /// Check a single file for conflicts and active work across worktrees (JSON output)
+    Check {
+        /// File path to check (reads from hook stdin if omitted)
+        path: Option<String>,
+    },
 }
 
 fn main() {
@@ -53,6 +59,20 @@ fn main() {
                     std::process::exit(1);
                 }
             }
+            Err(e) => {
+                eprintln!("Error: {}", e);
+                std::process::exit(1);
+            }
+        },
+        Some(Commands::Check { path }) => match WorktreeManager::discover() {
+            Ok(worktrees) => match check::run_check(&worktrees, path.as_deref()) {
+                Ok(true) if path.is_some() => std::process::exit(2),
+                Ok(_) => {}
+                Err(e) => {
+                    eprintln!("Error: {}", e);
+                    std::process::exit(1);
+                }
+            },
             Err(e) => {
                 eprintln!("Error: {}", e);
                 std::process::exit(1);

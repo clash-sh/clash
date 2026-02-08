@@ -86,3 +86,17 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Build
         run: cargo build --release
+
+  # Summary job for branch protection — reports a single "CI" status
+  ci:
+    name: CI
+    if: always()
+    needs: [test, fmt, clippy, audit, deny, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check results
+        run: |
+          if [[ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
+            echo "One or more jobs failed"
+            exit 1
+          fi

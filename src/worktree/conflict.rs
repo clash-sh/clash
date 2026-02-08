@@ -14,6 +14,11 @@ pub struct WorktreePairConflict {
     pub wt1: Worktree,
     pub wt2: Worktree,
     pub conflicting_files: Vec<String>,
+    /// Error message if conflict detection failed for this pair.
+    /// When set, `conflicting_files` is empty and should not be trusted.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    #[serde(default)]
+    pub error: Option<String>,
 }
 
 // ============================================================================
@@ -83,14 +88,16 @@ impl WorktreeManager {
 
         for i in 0..all.len() {
             for j in (i + 1)..all.len() {
-                let files = all[i]
-                    .conflicts_with(&all[j])
-                    .unwrap_or_else(|_| Vec::new());
+                let (files, error) = match all[i].conflicts_with(&all[j]) {
+                    Ok(files) => (files, None),
+                    Err(e) => (Vec::new(), Some(e.to_string())),
+                };
 
                 results.push(WorktreePairConflict {
                     wt1: all[i].clone(),
                     wt2: all[j].clone(),
                     conflicting_files: files,
+                    error,
                 });
             }
         }

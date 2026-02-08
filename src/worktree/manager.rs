@@ -148,6 +148,21 @@ impl WorktreeManager {
     pub fn iter(&self) -> std::slice::Iter<'_, Worktree> {
         self.items.iter()
     }
+
+    /// Find the worktree containing the given directory.
+    ///
+    /// Walks up from `dir` checking each directory against known worktree paths.
+    /// This handles subdirectories and avoids ambiguity with nested worktrees.
+    pub fn find_containing(&self, dir: &std::path::Path) -> Option<&Worktree> {
+        let mut current = Some(dir);
+        while let Some(d) = current {
+            if let Some(wt) = self.items.iter().find(|wt| wt.path == d) {
+                return Some(wt);
+            }
+            current = d.parent();
+        }
+        None
+    }
 }
 
 // WorktreeManager methods are extended in other modules:
