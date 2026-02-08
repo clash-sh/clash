@@ -4,27 +4,29 @@ use std::io::{IsTerminal, Read};
 use std::path::{Path, PathBuf};
 
 // ============================================================================
-// Hook-mode entry point (discovers worktrees from file path)
+// Worktree discovery from file path
 // ============================================================================
 
-/// Hook-mode entry point: reads file path from stdin, discovers worktrees
-/// from that file's location, then checks for conflicts.
+/// Discover worktrees by resolving the file path to an absolute path,
+/// then discovering the git repo from the file's parent directory.
 ///
-/// This allows the hook to work regardless of where `claude` was launched,
-/// as long as the file being edited is inside a git worktree.
-pub fn run_check_from_hook() -> Result<bool, CheckError> {
-    let file_path = read_hook_input()?;
+/// This allows clash to work regardless of cwd, as long as the target
+/// file is inside a git worktree.
+fn discover_from_file(path: &str) -> Result<WorktreeManager, CheckError> {
+    let abs_path = if Path::new(path).is_absolute() {
+        PathBuf::from(path)
+    } else {
+        let cwd = std::env::current_dir()
+            .and_then(|d| d.canonicalize().or(Ok(d)))
+            .map_err(CheckError::CurrentDir)?;
+        cwd.join(path)
+    };
 
-    // Discover worktrees from the file's parent directory
-    let parent = Path::new(&file_path)
-        .parent()
-        .unwrap_or(Path::new("."));
+    let parent = abs_path.parent().unwrap_or(Path::new("."));
     let parent_str = parent.to_str().unwrap_or(".");
 
-    let worktrees = WorktreeManager::discover_from(parent_str)
-        .map_err(|e| CheckError::HookInput(format!("cannot discover worktrees from {}: {}", parent_str, e)))?;
-
-    run_check_inner(&worktrees, &file_path, true)
+    WorktreeManager::discover_from(parent_str)
+        .map_err(|e| CheckError::HookInput(format!("cannot discover worktrees from {}: {}", parent_str, e)))
 }
 
 // ============================================================================
@@ -122,20 +124,23 @@ impl std::fmt::Display for CheckError {
 /// Check a single file for conflicts across worktrees.
 ///
 /// - `Some(path)` — manual mode: JSON to stdout, exit 2 if conflicts
-/// - `None` — hook mode: hook decision JSON to stdout (ask on conflicts), always exit 0
+/// - `None` — hook mode: reads file path from stdin, hook decision JSON to stdout
+///
+/// Discovers worktrees from the file's location, so it works regardless
+/// of the current working directory.
 ///
 /// Returns whether conflicts were found:
 /// - `Ok(false)` — no conflicts
 /// - `Ok(true)` — conflicts found
 /// - `Err(e)` — operational error, caller prints to stderr and exits 1
-pub fn run_check(worktrees: &WorktreeManager, path: Option<&str>) -> Result<bool, CheckError> {
-    match path {
-        Some(p) => run_check_inner(worktrees, p, false),
-        None => {
-            let file_path = read_hook_input()?;
-            run_check_inner(worktrees, &file_path, true)
-        }
-    }
+pub fn run_check(path: Option<&str>) -> Result<bool, CheckError> {
+    let (file_path, hook_mode) = match path {
+        Some(p) => (p.to_string(), false),
+        None => (read_hook_input()?, true),
+    };
+
+    let worktrees = discover_from_file(&file_path)?;
+    run_check_inner(&worktrees, &file_path, hook_mode)
 }
 
 fn run_check_inner(
