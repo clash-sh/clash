@@ -5,10 +5,10 @@
 <h1 align="center">Clash</h1>
 
 <p align="center">
-  <strong><em>Manage merge conflicts across git worktrees for parallel AI coding agents</em></strong>
+  <strong><em>Avoid merge conflicts across git worktrees for parallel AI coding agents</em></strong>
 </p>
 
-Clash is an open-source CLI tool that helps manage/avoid merge conflicts across git worktrees.
+Clash is an open-source CLI tool that helps avoid merge conflicts across git worktrees.
 
 It's designed for developers running multiple AI coding agents (Claude Code, Codex, etc.) in parallel, enabling them to identify potential conflicts early on in the development process and lets them/their coding agent work around potential conflicts.
 
@@ -43,10 +43,11 @@ Clash aims to be such a tool that helps with this and surface the **worktree-to-
 ## Clash - The Saviour
 
 Clash detects merge conflicts **between all worktree pairs** during development, helping you/agent:
+- **Guard file writes via hooks** — automatic conflict check before every AI agent edit
 - **See conflicts instantly** across all active worktrees
 - **Visualize conflict matrix** showing which branches conflict
 - **Monitor in real-time** as files change
-- **Integrate with AI agents** 
+- **Integrate with AI agents** via Claude Code hooks, CLAUDE.md instructions, or JSON output
 
 ### Clash in Action
 ![Clash alerts Claude Code to conflicts in another worktree, enabling smarter parallel development](https://clash.sh/demos/claude-using-clash-demo.gif)
@@ -55,27 +56,41 @@ Clash detects merge conflicts **between all worktree pairs** during development,
 
 ## Quick Start
 
-### Installation
+### 1. Install
+
+Pick whichever you prefer:
 
 ```bash
-# Quick install (macOS/Linux)
-curl -fsSL https://clash.sh/install.sh | sh
-
-# Homebrew (macOS/Linux)
-brew tap clash-sh/tap
-brew install clash
-
-# From crates.io
-cargo install clash-sh
-
-# From source (Rust 1.93+ required)
-cargo install --path .
+curl -fsSL https://clash.sh/install.sh | sh   # Quick install (macOS/Linux)
+brew tap clash-sh/tap && brew install clash     # Homebrew
+cargo install clash-sh                          # From crates.io
 ```
 
-### Basic Usage
-```For Humans/Agents - Add an instruction in Claude.md or ask it to ask use clash explicitly during your development. clash --help)```
+### 2. Set Up the Hook (Claude Code)
+
+Add this to `.claude/settings.json` — Clash will automatically check for conflicts before every file write:
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [{ "type": "command", "command": "clash check" }]
+      }
+    ]
+  }
+}
+```
+
+#### **That's it.** Clash will prompt you whenever Claude tries to edit a file that conflicts with another worktree.
+
+### 3. Manual Usage
 
 ```bash
+# Check a single file for conflicts
+clash check src/main.rs
+
 # Check conflicts across all worktrees
 clash status
 
@@ -89,6 +104,67 @@ clash watch
 ![Quick demo showing clash status in action](https://clash.sh/demos/clash-status-demo-short.gif)
 
 ## Core Features
+
+### Hook Integration (Claude Code) — Recommended
+
+The best way to use Clash with Claude Code — **automatic conflict detection before every file write, zero ongoing effort.**
+
+Add this to your Claude Code settings (`.claude/settings.json`):
+
+```json
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "clash check"
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+When Claude tries to write or edit a file, Clash automatically:
+1. Reads the target file path from the hook's stdin
+2. Checks it for conflicts across all worktrees
+3. If conflicts are found, prompts you with an "ask" decision — you can approve or deny the edit
+
+![Clash hook fires before Claude Code writes a conflicting file](https://clash.sh/demos/clash-check-hook-demo.gif)
+
+*Clash detects a conflict before Claude writes the file, giving you a chance to intervene*
+
+> **Note:** Claude Code currently doesn't display the `permissionDecisionReason` in the prompt UI ([anthropics/claude-code#24059](https://github.com/anthropics/claude-code/issues/24059)). You'll see the permission prompt but not the conflict details. As a workaround, you can run `clash check <file>` manually to see full details.
+
+### Check Command (Manual)
+
+You can also run `clash check` manually to check a single file for conflicts across all worktrees:
+
+```bash
+clash check src/main.rs
+```
+
+```json
+{
+  "file": "src/main.rs",
+  "current_worktree": "main",
+  "current_branch": "main",
+  "conflicts": [
+    {
+      "worktree": "clash-agent1",
+      "branch": "feature/auth",
+      "has_merge_conflict": true,
+      "has_active_changes": false
+    }
+  ]
+}
+```
+
+Exit codes: `0` = no conflicts, `2` = conflicts found, `1` = error.
 
 ### Status Command
 Shows a beautiful conflict matrix for all worktree pairs:
@@ -144,9 +220,13 @@ clash status --json | jq '.conflicts[] | select(.conflicting_files | length > 0)
 
 *Coordinating multiple AI agents across worktrees - each agent works independently while using Clash for monitoring for conflicts*
 
-### For Claude Code / Cursor / Windsurf (Today)
+### For Claude Code (Recommended: Hook)
 
-Add to your project instructions or `.claude/instructions.md`:
+The best integration is the [PreToolUse hook](#hook-integration-claude-code) — it fires automatically before every file write with zero ongoing effort. See the [Hook Integration](#hook-integration-claude-code) section above for setup.
+
+### For Claude Code / Cursor / Windsurf (Manual)
+
+If hooks aren't available (e.g. Cursor, Windsurf), add to your project instructions or `.claude/instructions.md`:
 
 ```markdown
 After each commit, run `clash status --json` to check for merge conflicts with other worktrees.
@@ -161,6 +241,7 @@ Example workflow:
 
 Available commands:
 - clash --help (show all commands)
+- clash check src/file.rs (check a single file)
 - clash status (check for conflicts)
 - clash status --json (output as JSON)
 - clash watch (real-time monitoring)
@@ -188,6 +269,8 @@ This is **100% read-only** — your repository is never modified.
 - ✅ Real-time watch mode
 - ✅ JSON output for automation/agent use
 - ✅ Beautiful conflict matrix display
+- ✅ Single-file conflict check (`clash check`)
+- ✅ Claude Code PreToolUse hook integration
 
 ### v0.2.0 (Next)
 - [ ] MCP server for AI agent integration
