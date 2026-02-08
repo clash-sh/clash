@@ -13,35 +13,31 @@ Set Shell "bash"
 Set TypingSpeed 100ms
 
 Hide
-Type "cd ~/Documents/work/clash"
+Type "cd /Users/kuriakosemathew/Documents/work/clash-sh/clash"
+Enter
+Type "clear"
 Enter
 Type "claude"
 Enter
-Sleep 4s
+Sleep 6s
 Show
 
 Sleep 1s
 
-# Ask Claude to edit a file that conflicts with another worktree
+# Use a very direct prompt so Claude attempts a file edit quickly
 Set TypingSpeed 50ms
-Type "Edit src/main.rs and add a new CLI flag --verbose for debug output"
+Type "Add a comment to the top of src/main.rs saying // TODO: add verbose flag"
 Enter
 
-# Claude thinks and starts working
-Sleep 5s
-
-# The hook fires - "Running PreToolUse hook..." message appears
-# followed by the conflict detection and permission prompt
-Sleep 15s
-
-# User reads the conflict warning and decides
+# Claude needs time to read context, think, and attempt the edit
+# The hook fires when Claude tries to use Write/Edit tool
 Sleep 10s
 
 # Exit Claude
 Ctrl+C
-Sleep 5.5s
+Sleep 1s
 
 Set TypingSpeed 50ms
-Type "# clash check detected the conflict before Claude wrote the file!"
+Type "# clash detected the conflict before Claude wrote the file!"
 Enter
-Sleep 3s
+Sleep 6s

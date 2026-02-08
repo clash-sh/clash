@@ -22,7 +22,7 @@ It's designed for developers running multiple AI coding agents (Claude Code, Cod
 ## Problem Statement with Some Context
 
 AI coding agents like Claude Code have transformed software development as we know it. Developers now can run 3-6+ agents simultaneously each working on a different feature/bug fix. The recommended approach put forward by
-most frontier labs is to isolate each agent in its own git worktree, which is essentially a separate working directory with its own branch.
+most frontier labs is to isolate each agent in its own **git worktree**, which is essentially a separate working directory with its own branch.
 
 When multiple AI agents (or developers) work in separate git worktrees, they're blind to each other's changes & inevitably touch overlapping parts of the codebase. Conflicts only surface at feature completion, often after significant work/time is wasted.
 Current tools only check for these conflicts only later down the line, we can have better results if we can catch potential conflicts earlier in the process.
