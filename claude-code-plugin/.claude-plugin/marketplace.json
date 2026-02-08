@@ -1,0 +1,19 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "clash-sh",
+  "version": "1.0.0",
+  "description": "Clash - detect merge conflicts across git worktrees before they happen",
+  "owner": {
+    "name": "Clash Contributors"
+  },
+  "plugins": [
+    {
+      "name": "clash",
+      "description": "Detect merge conflicts across git worktrees before they happen. Warns before writing to files that would cause merge conflicts when running multiple AI agents in parallel.",
+      "version": "0.1.0",
+      "source": ".",
+      "category": "development",
+      "tags": ["git", "worktree", "merge-conflicts", "multi-agent"]
+    }
+  ]
+}

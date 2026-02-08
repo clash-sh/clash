@@ -120,11 +120,14 @@ fn should_process_event(event: &notify::Event, gitignore: &Gitignore, repo_root:
         return false;
     }
 
-    // Filter for only actual content changes, not metadata
+    // Filter for actual content changes, not metadata.
+    // ModifyKind::Any is needed for macOS FSEvents which doesn't distinguish
+    // data vs metadata changes.
     matches!(
         event.kind,
-        EventKind::Modify(ModifyKind::Data(_)) |  // Actual content changes
+        EventKind::Modify(ModifyKind::Data(_)) |  // Content changes (Linux inotify)
         EventKind::Modify(ModifyKind::Name(_)) |  // Renames (git atomic operations)
+        EventKind::Modify(ModifyKind::Any) |       // Generic modify (macOS FSEvents)
         EventKind::Create(_) |                     // New files
         EventKind::Remove(_) // Deleted files
     )

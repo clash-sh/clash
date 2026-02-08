@@ -1,0 +1,12 @@
+{
+  "name": "clash",
+  "description": "Detect merge conflicts across git worktrees before they happen",
+  "version": "0.1.0",
+  "author": {
+    "name": "Clash Contributors"
+  },
+  "homepage": "https://clash.sh",
+  "repository": "https://github.com/clash-sh/clash",
+  "license": "MIT",
+  "keywords": ["git", "worktree", "merge-conflicts", "multi-agent"]
+}

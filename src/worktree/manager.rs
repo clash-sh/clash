@@ -19,39 +19,68 @@ impl WorktreeManager {
         Self::discover_from(".")
     }
 
-    /// Discover all worktrees in the repository at the given path
-    fn discover_from(path: &str) -> Result<Self> {
-        let path_buf = PathBuf::from(path);
-        // Canonicalize path for better error messages
-        let canonical_path = path_buf.canonicalize().unwrap_or_else(|_| path_buf.clone());
+    /// Discover all worktrees from any path inside a repository.
+    ///
+    /// Accepts a file path, directory path, or `.` for cwd. Resolves
+    /// relative paths against cwd, then uses `gix::discover` to walk
+    /// up and find the containing git repository.
+    pub fn discover_from(path: &str) -> Result<Self> {
+        let input = PathBuf::from(path);
+        let abs_path = if input.is_absolute() {
+            input
+        } else {
+            std::env::current_dir()
+                .and_then(|d| d.canonicalize().or(Ok(d)))
+                .unwrap_or_else(|_| input.clone())
+                .join(&input)
+        };
 
-        let repo = gix::open(path).map_err(|_| WorktreeError::NotARepository {
-            path: canonical_path.clone(),
+        // gix::discover expects a directory; if the path isn't a directory
+        // (file or non-existent path for new files), use its parent
+        let discover_path = if abs_path.is_dir() {
+            abs_path.clone()
+        } else {
+            abs_path.parent().unwrap_or(&abs_path).to_path_buf()
+        };
+
+        let repo = gix::discover(&discover_path).map_err(|_| WorktreeError::NotARepository {
+            path: abs_path.clone(),
         })?;
 
         let mut items = Vec::new();
 
-        // Add main worktree
-        let main_path = repo
-            .workdir()
+        // Find the real main worktree via the common .git directory.
+        // repo.workdir() returns the cwd worktree (wrong if discovered from
+        // a linked worktree). The common_dir is the shared .git/ directory
+        // whose parent is always the main worktree root.
+        //
+        // gix may return common_dir with relative components
+        // (e.g. `.git/worktrees/name/../..`), so canonicalize first.
+        let common_dir = repo
+            .common_dir()
+            .canonicalize()
+            .unwrap_or_else(|_| repo.common_dir().to_path_buf());
+        let main_path = common_dir
+            .parent()
             .and_then(|p| p.canonicalize().ok())
             .ok_or(WorktreeError::BareRepository)?;
 
-        let main_branch = repo
+        // Open the main worktree explicitly to get its branch and status,
+        // since `repo` may point to a linked worktree.
+        let main_repo = gix::open(&main_path).map_err(|_| WorktreeError::NotARepository {
+            path: main_path.clone(),
+        })?;
+
+        let main_branch = main_repo
             .head()
             .ok()
             .and_then(|head| head.referent_name().map(|n| n.shorten().to_string()))
             .unwrap_or_else(|| DETACHED_HEAD_LABEL.to_string());
 
-        // Check dirty status with explicit error handling
-        let main_status = match repo.is_dirty() {
+        let main_status = match main_repo.is_dirty() {
             Ok(true) => WorktreeStatus::Dirty,
             Ok(false) => WorktreeStatus::Clean,
-            Err(_) => {
-                // If we can't determine dirty status (permissions, I/O error, etc),
-                // default to Clean to avoid false warnings. User can manually check.
-                WorktreeStatus::Clean
-            }
+            Err(_) => WorktreeStatus::Clean,
         };
 
         items.push(Worktree {

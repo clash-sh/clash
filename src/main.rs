@@ -37,7 +37,8 @@ enum Commands {
 }
 
 fn main() {
-    // Force colors to always be enabled
+    // Force colors to always be enabled (test)
+    // TODO: Make color behavior configurable via --color flag (always/auto/never)
     control::set_override(true);
 
     let cli = Cli::parse();
@@ -64,15 +65,9 @@ fn main() {
                 std::process::exit(1);
             }
         },
-        Some(Commands::Check { path }) => match WorktreeManager::discover() {
-            Ok(worktrees) => match check::run_check(&worktrees, path.as_deref()) {
-                Ok(true) if path.is_some() => std::process::exit(2),
-                Ok(_) => {}
-                Err(e) => {
-                    eprintln!("Error: {}", e);
-                    std::process::exit(1);
-                }
-            },
+        Some(Commands::Check { path }) => match check::run_check(path.as_deref()) {
+            Ok(true) if path.is_some() => std::process::exit(2),
+            Ok(_) => {}
             Err(e) => {
                 eprintln!("Error: {}", e);
                 std::process::exit(1);
@@ -82,5 +77,13 @@ fn main() {
             println!("Clash v{}", env!("CARGO_PKG_VERSION"));
             println!("Try 'clash --help' for more information.");
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn sanity_check() {
+        assert_eq!(1 + 1, 2);
     }
 }

@@ -98,21 +98,32 @@ impl std::fmt::Display for CheckError {
 /// Check a single file for conflicts across worktrees.
 ///
 /// - `Some(path)` — manual mode: JSON to stdout, exit 2 if conflicts
-/// - `None` — hook mode: hook decision JSON to stdout (ask on conflicts), always exit 0
+/// - `None` — hook mode: reads file path from stdin, hook decision JSON to stdout
+///
+/// Discovers worktrees from the file's location, so it works regardless
+/// of the current working directory.
 ///
 /// Returns whether conflicts were found:
 /// - `Ok(false)` — no conflicts
 /// - `Ok(true)` — conflicts found
 /// - `Err(e)` — operational error, caller prints to stderr and exits 1
-pub fn run_check(worktrees: &WorktreeManager, path: Option<&str>) -> Result<bool, CheckError> {
-    let hook_mode = path.is_none();
-
-    let path = match path {
-        Some(p) => p.to_string(),
-        None => read_hook_input()?,
+pub fn run_check(path: Option<&str>) -> Result<bool, CheckError> {
+    let (file_path, hook_mode) = match path {
+        Some(p) => (p.to_string(), false),
+        None => (read_hook_input()?, true),
     };
 
-    let (current_wt, repo_relative) = resolve_file_path(&path, worktrees)?;
+    let worktrees = WorktreeManager::discover_from(&file_path)
+        .map_err(|e| CheckError::HookInput(format!("cannot discover worktrees: {}", e)))?;
+    run_check_inner(&worktrees, &file_path, hook_mode)
+}
+
+fn run_check_inner(
+    worktrees: &WorktreeManager,
+    path: &str,
+    hook_mode: bool,
+) -> Result<bool, CheckError> {
+    let (current_wt, repo_relative) = resolve_file_path(path, worktrees)?;
 
     let mut conflicts = Vec::new();
 
