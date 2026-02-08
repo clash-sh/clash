@@ -24,9 +24,9 @@ It's designed for developers running multiple AI coding agents (*Claude Code, Co
 - [Problem Statement](#problem-statement-with-some-context)
 - [Clash - The Saviour](#clash---the-saviour)
 - [Quick Start](#quick-start)
-  - [Install](#1-install)
-  - [Set Up Your AI Agent](#2-set-up-your-ai-agent)
-  - [Manual CLI Usage](#3-manual-cli-usage)
+  - [Step 1: Install](#step-1-install)
+  - [Step 2: Set Up Your AI Agent](#step-2-set-up-your-ai-agent)
+  - [Step 3: Manual CLI Usage](#step-3-manual-cli-usage)
 - [Core Features](#core-features)
   - [Plugin Integration](#plugin-integration-claude-code--recommended)
   - [Check Command](#check-command-manual)
@@ -84,7 +84,7 @@ Clash detects merge conflicts **between all worktree pairs** during development,
 
 ## Quick Start
 
-### 1. Install
+### Step 1: Install
 
 Pick whichever you prefer:
 
@@ -94,7 +94,7 @@ brew tap clash-sh/tap && brew install clash     # Homebrew
 cargo install clash-sh                          # From crates.io
 ```
 
-### 2. Set Up Your AI Agent
+### Step 2: Set Up Your AI Agent
 
 **Claude Code (Recommended: Plugin)**
 
@@ -142,7 +142,7 @@ conflict overview across all worktrees.
 Run `clash --help` for all available commands.
 ```
 
-### 3. Manual CLI Usage
+### Step 3: Manual CLI Usage
 
 ```bash
 # Check a single file for conflicts
