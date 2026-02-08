@@ -8,9 +8,9 @@
   <strong><em>Avoid merge conflicts across git worktrees for parallel AI coding agents</em></strong>
 </p>
 
-Clash is an open-source CLI tool that helps avoid merge conflicts across git worktrees.
+Clash is an **open-source CLI tool** that helps avoid merge conflicts across **git worktrees**.
 
-It's designed for developers running multiple AI coding agents (Claude Code, Codex, etc.) in parallel, enabling them to identify potential conflicts early on in the development process and lets them/their coding agent work around potential conflicts.
+It's designed for developers running multiple AI coding agents (*Claude Code, Codex, Cursor*, etc.) in parallel — helping them identify **potential conflicts early** in the development process so they can work around them before it's too late.
 
 <p align="center">
   <a href="https://rust-lang.org"><img src="https://img.shields.io/badge/Rust-1.93+-orange.svg" alt="Rust: 1.93+"></a>
@@ -43,23 +43,21 @@ It's designed for developers running multiple AI coding agents (Claude Code, Cod
 
 ## Problem Statement with Some Context
 
-AI coding agents like Claude Code have transformed software development as we know it. Developers now can run 3-6+ agents simultaneously each working on a different feature/bug fix. The recommended approach put forward by
-most frontier labs is to isolate each agent in its own **git worktree**, which is essentially a separate working directory with its own branch.
+AI coding agents like Claude Code have transformed software development as we know it. Developers now run **3-6+ agents simultaneously**, each working on a different feature/bug fix. The recommended approach put forward by most frontier labs is to isolate each agent in its own **git worktree** — essentially a separate working directory with its own branch.
 
-When multiple AI agents (or developers) work in separate git worktrees, they're blind to each other's changes & inevitably touch overlapping parts of the codebase. Conflicts only surface at feature completion, often after significant work/time is wasted.
-Current tools only check for these conflicts only later down the line, we can have better results if we can catch potential conflicts earlier in the process.
+When multiple AI agents (or developers) work in separate worktrees, they're **blind to each other's changes** and inevitably touch overlapping parts of the codebase. Conflicts only surface at feature completion, often after **significant work and time is wasted**. Current tools only catch these conflicts later down the line — we can do better by detecting them *earlier* in the process.
 
-Clash aims to be such a tool that helps with this and surface the **worktree-to-worktree conflicts** earlier in the process, so human/agent can be aware of overlapping changes and act on it, which will lead to better outcomes.
+Clash surfaces **worktree-to-worktree conflicts early**, so you and your agents can be aware of overlapping changes and act on them before it's too late.
 
 **Real quotes from developers:**
 
-> "Now you have created the fun new ability to create merge conflicts with yourself."
+> *"Now you have created the fun new ability to create merge conflicts with yourself."*
 > — GitButler Blog
 
-> "I now know to expect potential conflicts. This happened to me recently, which was a big learning moment."
+> *"I now know to expect potential conflicts. This happened to me recently, which was a big learning moment."*
 > — Developer on Medium
 
-> "If conflicts look tricky, I throw away the work."
+> *"If conflicts look tricky, I throw away the work."*
 > — Developer workflow description
 
 ## Clash - The Saviour
@@ -101,7 +99,7 @@ cargo install clash-sh                          # From crates.io
 
 **Claude Code (Recommended: Hook)**
 
-Add this to `.claude/settings.json` — Clash will automatically check for conflicts before every file write:
+Add this to `.claude/settings.json` — Clash will **automatically check for conflicts** before every file write:
 
 ```json
 {
@@ -178,9 +176,9 @@ Add this to your Claude Code settings (`.claude/settings.json`):
 ```
 
 When Claude tries to write or edit a file, Clash automatically:
-1. Reads the target file path from the hook's stdin
-2. Checks it for conflicts across all worktrees
-3. If conflicts are found, prompts you with an "ask" decision — you can approve or deny the edit
+1. Reads the target **file path** from the hook's stdin
+2. Checks it for **conflicts across all worktrees**
+3. If conflicts are found, prompts you with an **"ask" decision** — you can approve or deny the edit
 
 ![Clash hook fires before Claude Code writes a conflicting file](https://clash.sh/demos/clash-check-hook-demo.gif)
 
@@ -212,7 +210,7 @@ clash check src/main.rs
 }
 ```
 
-Exit codes: `0` = no conflicts, `2` = conflicts found, `1` = error.
+Exit codes: `0` = *no conflicts*, `2` = *conflicts found*, `1` = *error*.
 
 ### Status Command
 
@@ -229,10 +227,10 @@ Shows a beautiful conflict matrix for all worktree pairs:
 ╚══════════════════════════════════════════╝
 ```
 
-Numbers indicate conflicting files. "OK" means no conflicts.
+Numbers indicate **conflicting files**. **"OK"** means no conflicts.
 
 ### Watch Mode
-Live TUI monitoring for humans to keep tab with automatic refresh on file changes:
+Live **TUI monitoring** with automatic refresh on file changes:
 
 ```bash
 # Shows worktree status and conflict updates in real-time
@@ -242,7 +240,8 @@ clash watch
 ![Watch mode detecting conflicts as files change in real-time](https://clash.sh/demos/clash-watch-realtime-demo.gif)
 
 ### JSON Output
-Machine-readable output for CI/CD and AI agents:
+
+**Machine-readable output** for CI/CD and AI agents:
 
 ![JSON output for AI agents, scripts, and automation pipelines](https://clash.sh/demos/clash-status-json-demo.gif)
 
@@ -254,14 +253,14 @@ Machine-readable output for CI/CD and AI agents:
 
 ## How It Works
 
-Clash uses `git merge-tree` (via the gix library) to perform three-way merges between worktree pairs **without modifying your repository**. It:
+Clash uses `git merge-tree` (via the *gix* library) to perform **three-way merges** between worktree pairs **without modifying your repository**. It:
 
-1. Discovers all worktrees (main + linked)
-2. For each pair, finds the merge base
-3. Simulates merge to detect conflicts
-4. Reports conflicting files
+1. **Discovers** all worktrees (main + linked)
+2. **Finds the merge base** for each pair
+3. **Simulates the merge** to detect conflicts
+4. **Reports** conflicting files
 
-This is **100% read-only** — your repository is never modified.
+This is **100% read-only** — your repository is *never* modified.
 
 ## Roadmap
 
@@ -275,7 +274,6 @@ This is **100% read-only** — your repository is never modified.
 
 ### v0.2.0 (Next)
 - [ ] MCP server for AI agent integration — agents discover and use Clash automatically
-
 
 ## Use Cases
 
@@ -307,19 +305,20 @@ Fail fast when feature branches conflict:
 
 ## Architecture
 
-Clash is written in Rust for speed and reliability:
-- **gix** - Git operations without shelling out
-- **ratatui** - Terminal UI framework
-- **notify** - File system watching
-- **serde** - JSON serialization
+Clash is written in **Rust** for speed and reliability:
 
-Single binary, no runtime dependencies. Works anywhere git works.
+| Crate | Purpose |
+|-------|---------|
+| **gix** | Git operations without shelling out |
+| **ratatui** | Terminal UI framework |
+| **notify** | File system watching |
+| **serde** | JSON serialization |
+
+**Single binary, no runtime dependencies.** Works anywhere git works.
 
 ## Contributing
 
-We really appreciate all contributions big or small! 
-
-Here are some ways to be part of clash:
+We really appreciate **all contributions** big or small!
 
 - ⭐ Star the repo — helps others discover Clash
 - 🗣️ Tell a friend about Clash
@@ -331,11 +330,10 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for some more details.
 ## FAQ
 
 **Q: Does Clash modify my repository?**
-A: Never. Clash is 100% read-only. It simulates merges in memory.
+A: **Never.** Clash is 100% read-only. It simulates merges in memory.
 
 **Q: Can it resolve conflicts?**
-A: Not yet. Clash detects conflicts. Resolution suggestions may be in a future version. But the underlying
-agent should be able to act on the information
+A: Not yet — Clash *detects* conflicts. Resolution suggestions may come in a future version. In the meantime, your AI agent can act on the conflict information directly.
 
 ## Support
 
