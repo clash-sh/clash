@@ -33,7 +33,7 @@ It's designed for developers running multiple AI coding agents (Claude Code, Cod
   - [Status Command](#status-command)
   - [Watch Mode](#watch-mode)
   - [JSON Output](#json-output)
-- [Example Workflow](#an-example-workflow-with-2-instances-co-ordinating-with-clash)
+- [Example: Multi-Agent Workflow](#example-multi-agent-workflow)
 - [How It Works](#how-it-works)
 - [Roadmap](#roadmap)
 - [Use Cases](#use-cases)
@@ -215,6 +215,7 @@ clash check src/main.rs
 Exit codes: `0` = no conflicts, `2` = conflicts found, `1` = error.
 
 ### Status Command
+
 Shows a beautiful conflict matrix for all worktree pairs:
 
 ```
@@ -243,34 +244,13 @@ clash watch
 ### JSON Output
 Machine-readable output for CI/CD and AI agents:
 
-```bash
-clash status --json | jq '.conflicts[] | select(.conflicting_files | length > 0)'
-```
-
-```json
-{
-  "worktrees": [...],
-  "conflicts": [
-    {
-      "wt1_id": "feature/auth",
-      "wt2_id": "feature/api",
-      "conflicting_files": ["src/models.rs", "api/schema.json"]
-    }
-  ]
-}
-```
-
 ![JSON output for AI agents, scripts, and automation pipelines](https://clash.sh/demos/clash-status-json-demo.gif)
 
-## An Example Workflow with 2 instances. Co-ordinating with Clash
+## Example: Multi-Agent Workflow
 
 ![Multiple AI agents working in parallel with Clash coordination](https://clash.sh/demos/multi-agent-clash-demo-v1.gif)
 
 *Coordinating multiple AI agents across worktrees - each agent works independently while using Clash for monitoring for conflicts*
-
-### MCP Server (Coming Soon)
-
-Once the MCP server is available, Clash will automatically appear in AI agent tool lists, enabling seamless conflict detection without manual configuration. Agents will be able to discover and use Clash just like any other MCP-enabled tool.
 
 ## How It Works
 
@@ -294,9 +274,7 @@ This is **100% read-only** — your repository is never modified.
 - ✅ Claude Code PreToolUse hook integration
 
 ### v0.2.0 (Next)
-- [ ] MCP server for AI agent integration
-
-### v0.3.0 (Coming Soon)
+- [ ] MCP server for AI agent integration — agents discover and use Clash automatically
 
 
 ## Use Cases
@@ -343,10 +321,10 @@ We really appreciate all contributions big or small!
 
 Here are some ways to be part of clash:
 
-⭐ Star the repo — helps others discover Clash
-🗣️ Tell a friend about Clash
+- ⭐ Star the repo — helps others discover Clash
+- 🗣️ Tell a friend about Clash
 - 📝 [**Open an issue**](https://github.com/clash-sh/clash/issues/) — feedback, feature requests, even small friction points or confusing messages, or [AI agent coordination pain not yet solved](https://github.com/clash-sh/clash/issues/new?title=Agent%20coordination%20friction%3A%20&body=%23%23%20The%20friction%0A%0A%3C!--%20What%20agent%20coordination%20task%20is%20still%20painful%3F%20--%3E%0A%0A%23%23%20Current%20workaround%0A%0A%3C!--%20How%20do%20you%20handle%20this%20today%3F%20--%3E%0A%0A%23%23%20Ideal%20solution%0A%0A%3C!--%20What%20would%20make%20this%20easier%3F%20--%3E)
-- 📢 **Share**: [X](https://twitter.com/intent/tweet?text=Clash%20%E2%80%94%20Manage%20merge%20conflicts%20across%20git%20worktrees%20for%20parallel%20AI%20coding%20agents&url=https%3A%2F%2Fgithub.com%2Fclash-sh%2Fclash) · [Reddit](https://www.reddit.com/submit?url=https%3A%2F%2Fgithub.com%2Fclash-sh%2Fclash&title=Clash%20%E2%80%94%20Manage%20merge%20conflicts%20across%20git%20worktrees%20for%20parallel%20AI%20coding%20agents) · [LinkedIn](https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fgithub.com%2Fclash-sh%2Fclash)
+- 📢 **Share**: [X](https://twitter.com/intent/tweet?text=Clash%20%E2%80%94%20Avoid%20merge%20conflicts%20across%20git%20worktrees%20for%20parallel%20AI%20coding%20agents&url=https%3A%2F%2Fgithub.com%2Fclash-sh%2Fclash) · [Reddit](https://www.reddit.com/submit?url=https%3A%2F%2Fgithub.com%2Fclash-sh%2Fclash&title=Clash%20%E2%80%94%20Avoid%20merge%20conflicts%20across%20git%20worktrees%20for%20parallel%20AI%20coding%20agents) · [LinkedIn](https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fgithub.com%2Fclash-sh%2Fclash)
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for some more details.
 
