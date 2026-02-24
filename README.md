@@ -24,8 +24,8 @@ It's designed for developers running multiple AI coding agents (*Claude Code, Co
 - [Problem Statement](#problem-statement-with-some-context)
 - [Clash - The Saviour](#clash---the-saviour)
 - [Quick Start](#quick-start)
-  - [Step 1: Install](#step-1-install)
-  - [Step 2: Set Up Your AI Agent](#step-2-set-up-your-ai-agent)
+  - [Step 1: Quick Setup (Claude Code Recommended)](#step-1-quick-setup-claude-code-recommended)
+  - [Step 2: Other Setups](#step-2-other-setups)
   - [Step 3: Manual CLI Usage](#step-3-manual-cli-usage)
 - [Core Features](#core-features)
   - [Plugin Integration](#plugin-integration-claude-code--recommended)
@@ -88,21 +88,17 @@ Clash detects merge conflicts **between all worktree pairs** during development,
 
 ## Quick Start
 
-### Step 1: Install
+### Step 1: Quick Setup (Claude Code Recommended)
 
-Pick whichever you prefer:
+Install Clash and the Claude plugin in one go:
 
 ```bash
-curl -fsSL https://clash.sh/install.sh | sh   # Quick install (macOS/Linux)
-brew tap clash-sh/tap && brew install clash     # Homebrew
-cargo install clash-sh                          # From crates.io
+curl -fsSL https://clash.sh/install.sh | sh && \
+  claude plugin marketplace add clash-sh/clash && \
+  claude plugin install clash@clash-sh
 ```
 
-### Step 2: Set Up Your AI Agent
-
-**Claude Code (Recommended: Plugin)**
-
-Install the Clash plugin — it automatically checks for conflicts before every file write:
+If `clash` is already installed, run plugin setup directly:
 
 ```bash
 claude plugin marketplace add clash-sh/clash
@@ -111,8 +107,20 @@ claude plugin install clash@clash-sh
 
 **That's it.** Clash will prompt you whenever Claude tries to edit a file that conflicts with another worktree.
 
+### Step 2: Other Setups
+
+**Not using Claude Code? Install Clash manually:**
+
+```bash
+curl -fsSL https://clash.sh/install.sh | sh    # Quick install (macOS/Linux)
+brew tap clash-sh/tap && brew install clash    # Homebrew
+cargo install clash-sh                         # From crates.io
+```
+
+**Claude Code (Alternative: Manual hook setup)**
+
 <details>
-<summary><strong>Alternative: Manual hook setup</strong></summary>
+<summary><strong>Manual hook setup (without plugin)</strong></summary>
 
 If you prefer not to use the plugin, add the `hooks` key to your `.claude/settings.json`:
 
