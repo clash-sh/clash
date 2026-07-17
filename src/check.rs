@@ -285,11 +285,9 @@ fn resolve_file_path<'a>(
         .find_containing(&abs_path)
         .ok_or_else(|| CheckError::NotInWorktree(abs_path.clone()))?;
 
-    let rel = abs_path
-        .strip_prefix(&wt.path)
-        .map_err(|_| CheckError::PathResolution(abs_path.clone()))?
-        .to_string_lossy()
-        .to_string();
+    let rel = worktrees
+        .repo_relative_path(&abs_path, wt)
+        .ok_or_else(|| CheckError::PathResolution(abs_path.clone()))?;
 
     Ok((wt, rel))
 }
