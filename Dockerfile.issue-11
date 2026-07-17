@@ -1,0 +1,16 @@
+# syntax=docker/dockerfile:1
+
+ARG RUST_IMAGE=rust:1.93-bookworm
+FROM ${RUST_IMAGE}
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates git \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN rustup component add clippy
+
+WORKDIR /workspace
+
+COPY . .
+
+RUN scripts/verify-issue-11.sh

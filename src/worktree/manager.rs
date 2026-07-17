@@ -4,7 +4,7 @@ use super::error::{Result, WorktreeError};
 use super::{
     DETACHED_HEAD_LABEL, INACCESSIBLE_PATH_LABEL, MAIN_WORKTREE_ID, Worktree, WorktreeStatus,
 };
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// Manager for all worktrees in a git repository
 #[derive(Debug, Clone)]
@@ -182,17 +182,156 @@ impl WorktreeManager {
     ///
     /// Walks up from `dir` checking each directory against known worktree paths.
     /// This handles subdirectories and avoids ambiguity with nested worktrees.
-    pub fn find_containing(&self, dir: &std::path::Path) -> Option<&Worktree> {
+    pub fn find_containing(&self, dir: &Path) -> Option<&Worktree> {
         let mut current = Some(dir);
         while let Some(d) = current {
-            if let Some(wt) = self.items.iter().find(|wt| wt.path == d) {
+            if let Some(wt) = self.items.iter().find(|wt| paths_equivalent(&wt.path, d)) {
                 return Some(wt);
             }
             current = d.parent();
         }
         None
     }
+
+    /// Return `path` relative to `worktree`, using the same normalization as
+    /// worktree lookup.
+    pub fn repo_relative_path(&self, path: &Path, worktree: &Worktree) -> Option<String> {
+        path_relative_to(path, &worktree.path)
+    }
 }
 
 // WorktreeManager methods are extended in other modules:
 // - conflict.rs: adds check_all_conflicts(), check_conflicts_between(), etc.
+
+fn paths_equivalent(left: &Path, right: &Path) -> bool {
+    comparable_path(left) == comparable_path(right)
+}
+
+fn path_relative_to(path: &Path, root: &Path) -> Option<String> {
+    if let Ok(relative) = path.strip_prefix(root) {
+        return Some(path_to_string(relative));
+    }
+
+    let path_normalized = normalized_path(path);
+    let root_normalized = normalized_path(root);
+    let path_key = comparable_path_from_normalized(&path_normalized);
+    let root_key = comparable_path_from_normalized(&root_normalized);
+
+    if path_key == root_key {
+        return Some(String::new());
+    }
+
+    let root_with_separator = if root_key.ends_with('/') {
+        root_key
+    } else {
+        format!("{}/", root_key)
+    };
+
+    path_key.strip_prefix(&root_with_separator)?;
+
+    let relative_start = if root_normalized.ends_with('/') {
+        root_normalized.len()
+    } else {
+        root_normalized.len() + 1
+    };
+
+    path_normalized
+        .get(relative_start..)
+        .map(ToString::to_string)
+}
+
+fn comparable_path(path: &Path) -> String {
+    comparable_path_from_normalized(&normalized_path(path))
+}
+
+fn normalized_path(path: &Path) -> String {
+    let mut path = path_to_string(path);
+
+    if let Some(stripped) = path.strip_prefix("//?/UNC/") {
+        path = format!("//{}", stripped);
+    } else if let Some(stripped) = path.strip_prefix("//?/") {
+        path = stripped.to_string();
+    }
+
+    trim_trailing_separators(&mut path);
+    path
+}
+
+fn comparable_path_from_normalized(path: &str) -> String {
+    let mut path = path.to_string();
+    if is_windows_path(&path) {
+        path.make_ascii_lowercase();
+    }
+
+    path
+}
+
+fn path_to_string(path: &Path) -> String {
+    path.to_string_lossy().replace('\\', "/")
+}
+
+fn trim_trailing_separators(path: &mut String) {
+    while path.len() > 1 && path.ends_with('/') && !is_windows_drive_root(path) {
+        path.pop();
+    }
+}
+
+fn is_windows_drive_root(path: &str) -> bool {
+    let bytes = path.as_bytes();
+    bytes.len() == 3 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' && bytes[2] == b'/'
+}
+
+fn is_windows_path(path: &str) -> bool {
+    let bytes = path.as_bytes();
+    (bytes.len() >= 3 && bytes[0].is_ascii_alphabetic() && bytes[1] == b':' && bytes[2] == b'/')
+        || path.starts_with("//")
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn windows_reported_path_shapes_do_not_match_without_normalization() {
+        assert_ne!(
+            Path::new(r"\\?\C:\Repo\Linked-A"),
+            Path::new("C:/repo/linked-a"),
+        );
+    }
+
+    #[test]
+    fn windows_extended_prefix_and_slashes_match() {
+        assert!(paths_equivalent(
+            Path::new(r"\\?\C:\Repo\Linked-A"),
+            Path::new("C:/repo/linked-a"),
+        ));
+    }
+
+    #[test]
+    fn normalized_relative_path_handles_windows_prefix_mismatch() {
+        let relative = path_relative_to(
+            Path::new(r"\\?\C:\Repo\Linked-A\Src\Lib.rs"),
+            Path::new("C:/repo/linked-a"),
+        );
+
+        assert_eq!(relative.as_deref(), Some("Src/Lib.rs"));
+    }
+
+    #[test]
+    fn normalized_relative_path_handles_windows_prefix_mismatch_reversed() {
+        let relative = path_relative_to(
+            Path::new("C:/Repo/Linked-A/src/lib.rs"),
+            Path::new(r"\\?\C:\repo\linked-a"),
+        );
+
+        assert_eq!(relative.as_deref(), Some("src/lib.rs"));
+    }
+
+    #[test]
+    fn unix_paths_remain_case_sensitive() {
+        assert!(!paths_equivalent(
+            Path::new("/tmp/Repo"),
+            Path::new("/tmp/repo"),
+        ));
+    }
+}
